@@ -1,0 +1,99 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "name": "Phase changes",
+        "datasource": { "type": "influxdb", "uid": "influxdb" },
+        "enable": true,
+        "iconColor": "orange",
+        "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"fsm_state\")\n  |> filter(fn: (r) => r._field == \"phase\")"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Throughput (veh/min) per side",
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"throughput\")\n  |> filter(fn: (r) => r._field == \"vpm\")\n  |> aggregateWindow(every: 10s, fn: mean, createEmpty: false)"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Queue length (vehicles) per side",
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"queue\")\n  |> filter(fn: (r) => r._field == \"length\")"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Average wait / delay (s)",
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"delay\")\n  |> filter(fn: (r) => r._field == \"avg_s\")"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Current FSM phase",
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name" },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"fsm_state\")\n  |> filter(fn: (r) => r._field == \"phase\")\n  |> last()"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Active alerts (last 5m)",
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
+      "options": { "reduceOptions": { "calcs": ["sum"] } },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"corridor\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"alerts\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> sum()"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["corridor", "traffic"],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Smart Reverse Corridor",
+  "uid": "corridor-main",
+  "version": 1,
+  "weekStart": ""
+}
