@@ -78,10 +78,9 @@ export default function App() {
 
       <main className="max-w-[1920px] mx-auto px-6 py-6 grid grid-cols-12 gap-6">
         <section className="col-span-12 xl:col-span-8 space-y-6">
-          {/* Live world snapshot from corridor/sim/world is now the hero panel. */}
+          {/* Live world snapshot from corridor/sim/world is the hero panel. */}
           <LiveRoadView now={now} />
           <PhasePanel now={now} />
-          <RoadView now={now} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <QueueChart />
             <ThroughputChart />
@@ -90,6 +89,8 @@ export default function App() {
 
         <aside className="col-span-12 xl:col-span-4 space-y-6">
           <ControlPanel />
+          {/* Compact mini-map of the corridor in the sidebar. */}
+          <RoadView now={now} />
           <CameraHealth />
           <AlertsFeed />
         </aside>
