@@ -1,0 +1,180 @@
+# Smart Reverse Corridor — local dev stack.
+# Usage:
+#   docker compose up -d --build                 # core stack
+#   docker compose --profile sim up -d           # +simulator
+#   docker compose --profile ml  up -d           # +ml service
+# Ports exposed to host (see infra/README.md):
+#   web 5173, controller 8000, grafana 3001, influxdb 8086, mosquitto 1883/9001
+
+name: smart-reverse-corridor
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: src-mosquitto
+    restart: unless-stopped
+    ports:
+      - "${MQTT_PORT:-1883}:1883"
+      - "${MQTT_WS_PORT:-9001}:9001"
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    networks: [corridor]
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h 127.0.0.1 -p 1883 -t healthcheck -C 1 -W 2 || exit 0"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  influxdb:
+    image: influxdb:2
+    container_name: src-influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUX_USERNAME:-admin}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUX_PASSWORD:-adminadmin}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUX_ORG:-cet}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUX_BUCKET:-corridor}
+      DOCKER_INFLUXDB_INIT_RETENTION: ${INFLUX_RETENTION:-7d}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_TOKEN:-devtoken-change-me}
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    networks: [corridor]
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  controller:
+    build:
+      context: ./services/controller
+    container_name: src-controller
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      CONTROLLER_HOST: 0.0.0.0
+      CONTROLLER_PORT: 8000
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      INFLUX_URL: http://influxdb:8086
+      INFLUX_ORG: ${INFLUX_ORG:-cet}
+      INFLUX_BUCKET: ${INFLUX_BUCKET:-corridor}
+      INFLUX_TOKEN: ${INFLUX_TOKEN:-devtoken-change-me}
+    depends_on:
+      mosquitto:
+        condition: service_started
+      influxdb:
+        condition: service_started
+    ports:
+      - "${CONTROLLER_PORT:-8000}:8000"
+    networks: [corridor]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://127.0.0.1:8000/state\", timeout=2).status<500 else 1)' || exit 0"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  ml:
+    build:
+      context: ./services/ml
+    container_name: src-ml
+    restart: unless-stopped
+    profiles: ["ml"]
+    env_file: .env
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+    depends_on:
+      mosquitto:
+        condition: service_started
+    volumes:
+      - ./services/ml/data:/data:ro
+    networks: [corridor]
+
+  simulator:
+    build:
+      context: ./services/simulator
+    container_name: src-simulator
+    restart: unless-stopped
+    profiles: ["sim"]
+    env_file: .env
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      SIM_SCENARIO: ${SIM_SCENARIO:-asymmetric}
+      SIM_MODE: ${SIM_MODE:-adaptive}
+    depends_on:
+      mosquitto:
+        condition: service_started
+      controller:
+        condition: service_started
+    networks: [corridor]
+
+  web:
+    build:
+      context: ./web
+    container_name: src-web
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:8000/ws}
+      VITE_MQTT_WS_URL: ${VITE_MQTT_WS_URL:-ws://localhost:9001}
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    depends_on:
+      controller:
+        condition: service_started
+    networks: [corridor]
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: src-grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+      INFLUX_URL: http://influxdb:8086
+      INFLUX_ORG: ${INFLUX_ORG:-cet}
+      INFLUX_BUCKET: ${INFLUX_BUCKET:-corridor}
+      INFLUX_TOKEN: ${INFLUX_TOKEN:-devtoken-change-me}
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      influxdb:
+        condition: service_started
+    networks: [corridor]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  corridor:
+    name: corridor-net
+    driver: bridge
+
+volumes:
+  mosquitto-data:
+  mosquitto-log:
+  influxdb-data:
+  influxdb-config:
+  grafana-data:
