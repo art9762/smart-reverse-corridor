@@ -1,0 +1,8 @@
+ultralytics==8.2.103
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+paho-mqtt==2.1.0
+pydantic-settings==2.5.2
+structlog==24.4.0
+lap==0.4.0
+pytest==8.3.3
