@@ -132,7 +132,8 @@ services:
       VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:8000/ws}
       VITE_MQTT_WS_URL: ${VITE_MQTT_WS_URL:-ws://localhost:9001}
     ports:
-      - "${WEB_PORT:-5173}:5173"
+      # nginx внутри контейнера слушает 80 (см. web/Dockerfile)
+      - "${WEB_PORT:-5173}:80"
     depends_on:
       controller:
         condition: service_started
