@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+.pnp/
+.pnp.js
+.next/
+.vite/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Data / models
+data/
+models/*.pt
+models/*.onnx
+runs/
+logs/
+*.log
+*.sqlite
+*.db
+
+# Docker
+.docker/
