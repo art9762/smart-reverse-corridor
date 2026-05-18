@@ -70,4 +70,60 @@ describe('<LiveRoadView />', () => {
     expect(svg.getAttribute('aria-label')).toContain('GREEN_A');
     expect(svg.getAttribute('aria-label')).toContain('4 vehicles');
   });
+
+  // -------------------------------------------------------------------
+  // Single-lane reverse corridor placement rules:
+  //   x < 0           -> queue A (approach)
+  //   0 <= x <= 1     -> inside the shared single-lane zone
+  //   x > 1           -> queue B (approach)
+  // -------------------------------------------------------------------
+
+  it('places vehicles with x<0 into queue A, in [0..1] into the zone, and x>1 into queue B', () => {
+    const snap: WorldSnapshot = {
+      ts: 1,
+      zone_length_m: 600,
+      phase: 'GREEN_A',
+      vehicles: [
+        { id: 10, side: 'A', type: 'car', x: -0.4, y: 0, speed: 0, len_m: 4.5, emergency: false },
+        { id: 11, side: 'A', type: 'truck', x: -0.05, y: 0, speed: 0, len_m: 12, emergency: false },
+        { id: 20, side: 'A', type: 'car', x: 0.2, y: 0, speed: 8, len_m: 4.5, emergency: false },
+        { id: 21, side: 'B', type: 'car', x: 0.85, y: 0, speed: 6, len_m: 4.5, emergency: false },
+        { id: 30, side: 'B', type: 'bus', x: 1.05, y: 0, speed: 0, len_m: 11, emergency: false },
+        { id: 31, side: 'B', type: 'car', x: 1.4, y: 0, speed: 0, len_m: 4.5, emergency: false },
+      ],
+      queues: { A: 2, B: 2 },
+    };
+    useDashboard.getState().ingestWorld(snap);
+    render(<LiveRoadView now={2} />);
+
+    const get = (id: number) =>
+      document.querySelector<SVGGElement>(`[data-testid="vehicle-${id}"]`);
+
+    expect(get(10)?.getAttribute('data-zone')).toBe('queue_a');
+    expect(get(11)?.getAttribute('data-zone')).toBe('queue_a');
+    expect(get(20)?.getAttribute('data-zone')).toBe('zone');
+    expect(get(21)?.getAttribute('data-zone')).toBe('zone');
+    expect(get(30)?.getAttribute('data-zone')).toBe('queue_b');
+    expect(get(31)?.getAttribute('data-zone')).toBe('queue_b');
+  });
+
+  it('treats the zone boundary x==0 and x==1 as inside the zone', () => {
+    const snap: WorldSnapshot = {
+      ts: 1,
+      zone_length_m: 500,
+      phase: 'GREEN_B',
+      vehicles: [
+        { id: 100, side: 'A', type: 'car', x: 0, y: 0, speed: 0, len_m: 4.5, emergency: false },
+        { id: 101, side: 'B', type: 'car', x: 1, y: 0, speed: 0, len_m: 4.5, emergency: false },
+      ],
+      queues: { A: 0, B: 0 },
+    };
+    useDashboard.getState().ingestWorld(snap);
+    render(<LiveRoadView now={2} />);
+
+    const get = (id: number) =>
+      document.querySelector<SVGGElement>(`[data-testid="vehicle-${id}"]`);
+    expect(get(100)?.getAttribute('data-zone')).toBe('zone');
+    expect(get(101)?.getAttribute('data-zone')).toBe('zone');
+  });
 });

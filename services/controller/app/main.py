@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 
-from .api import router as api_router
+from .api import install_cors, router as api_router
 from .config import get_settings
 from .engine import Engine
 
@@ -62,6 +62,8 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+    # CORS must be installed before routes (FastAPI applies middleware in order).
+    install_cors(app)
     app.include_router(api_router)
     return app
 
