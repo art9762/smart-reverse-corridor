@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-feature-settings: 'cv11', 'ss01', 'tnum';
+}
+
+/* Subtle scanlines for the demo aesthetic */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.card {
+  @apply bg-bg-panel/80 border border-bg-edge rounded-2xl shadow-lg shadow-black/30 backdrop-blur;
+}
+
+.card-tight {
+  @apply bg-bg-panel/80 border border-bg-edge rounded-xl;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-bg-edge
+    bg-bg-raised hover:bg-bg-edge transition-colors text-sm font-medium
+    disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-primary {
+  @apply btn bg-accent-blue/20 border-accent-blue/40 hover:bg-accent-blue/30 text-blue-200;
+}
+
+.btn-warn {
+  @apply btn bg-accent-yellow/20 border-accent-yellow/50 hover:bg-accent-yellow/30 text-yellow-200;
+}
+
+.btn-danger {
+  @apply btn bg-accent-red/20 border-accent-red/50 hover:bg-accent-red/30 text-red-200;
+}
+
+.btn-success {
+  @apply btn bg-accent-green/20 border-accent-green/50 hover:bg-accent-green/30 text-emerald-200;
+}
+
+.kbd {
+  @apply px-1.5 py-0.5 text-xs rounded bg-bg-raised border border-bg-edge font-mono;
+}
+
+.tag {
+  @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border;
+}
+
+.phase-transition {
+  transition:
+    background-color 600ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 600ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 600ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.signal-glow-green {
+  box-shadow: 0 0 24px rgba(34, 197, 94, 0.45), inset 0 0 10px rgba(34, 197, 94, 0.5);
+}
+.signal-glow-yellow {
+  box-shadow: 0 0 24px rgba(234, 179, 8, 0.5), inset 0 0 10px rgba(234, 179, 8, 0.55);
+}
+.signal-glow-red {
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.5), inset 0 0 10px rgba(239, 68, 68, 0.55);
+}
