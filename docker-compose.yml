@@ -124,13 +124,12 @@ services:
   web:
     build:
       context: ./web
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:8000/ws}
+        VITE_MQTT_WS_URL: ${VITE_MQTT_WS_URL:-ws://localhost:9001}
     container_name: src-web
     restart: unless-stopped
-    env_file: .env
-    environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
-      VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:8000/ws}
-      VITE_MQTT_WS_URL: ${VITE_MQTT_WS_URL:-ws://localhost:9001}
     ports:
       # nginx внутри контейнера слушает 80 (см. web/Dockerfile)
       - "${WEB_PORT:-5173}:80"
