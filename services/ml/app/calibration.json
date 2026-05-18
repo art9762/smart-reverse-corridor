@@ -1,0 +1,30 @@
+{
+  "A_in": {
+    "side": "A",
+    "dir": "in",
+    "line": [[100, 360], [1180, 360]],
+    "expected_dir": 1,
+    "_comment": "Camera at side A, watching incoming lane. Track moving downward (image y grows) crosses the line and triggers 'in' event."
+  },
+  "A_out": {
+    "side": "A",
+    "dir": "out",
+    "line": [[100, 360], [1180, 360]],
+    "expected_dir": -1,
+    "_comment": "Camera at side A, watching outgoing lane. Track moving upward (image y decreases) is 'in' direction here per camera POV."
+  },
+  "B_in": {
+    "side": "B",
+    "dir": "in",
+    "line": [[100, 360], [1180, 360]],
+    "expected_dir": 1,
+    "_comment": "Camera at side B, watching incoming lane."
+  },
+  "B_out": {
+    "side": "B",
+    "dir": "out",
+    "line": [[100, 360], [1180, 360]],
+    "expected_dir": -1,
+    "_comment": "Camera at side B, watching outgoing lane."
+  }
+}
