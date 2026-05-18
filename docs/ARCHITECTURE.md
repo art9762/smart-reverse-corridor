@@ -6,35 +6,26 @@
 - Вход: видеопотоки от 4 камер (A_in, A_out, B_in, B_out) — файлы или RTSP.
 - Алгоритм: YOLOv8n → ByteTrack → виртуальная линия пересечения.
 - Выход (MQTT):
-  - `corridor/cam/<side>/<dir>/event` — `{ts, track_id, class, side, dir}`
-  - `corridor/cam/<side>/<dir>/heartbeat` — раз в 1с (для watchdog)
+  - `corridor/cam/<side>/<dir>/event`
+  - `corridor/cam/<side>/<dir>/heartbeat`
 
 ### 2. `services/controller` — мозг системы
-- FSM: `RED_BOTH → GREEN_A → YELLOW_A → ALL_RED(clear) → GREEN_B → YELLOW_B → ALL_RED(clear) → ...`
-- Подписан на `corridor/cam/#`. Ведёт счётчики `enter_A`, `exit_A`, `enter_B`, `exit_B`, `inside_A`, `inside_B`.
+- FSM, адаптивный планировщик, REST/WS API.
+- Слушает только CV-события и команды.
+- НЕ читает `corridor/sim/world` — это только для визуализации.
+
+### 3. `services/simulator` — headless-генератор трафика
+- По умолчанию без GUI.
 - Публикует:
-  - `corridor/state` — текущее состояние FSM, длительности, оставшееся время.
-  - `corridor/metrics/tick` — раз в 1с — очереди, throughput, задержки.
-  - `corridor/alerts` — emergency, lost-camera, stuck-vehicle.
-- REST API (FastAPI):
-  - `GET /state` — текущее состояние.
-  - `GET /metrics?from=&to=` — агрегаты для графиков.
-  - `POST /override` — ручное переключение / приоритет спецтранспорта.
-  - `POST /config` — горячая правка весов/таймингов.
-  - `WS /ws` — стрим событий (для UI).
-- Хранилище: InfluxDB (метрики), SQLite (события + конфиг).
+  - `corridor/cam/...` — роль «железных камер» для контроллера.
+  - `corridor/sim/world` — живой слепок мира для UI (10–20 Hz).
+- Pygame-окно — опциональный debug-флаг (`--render-debug`), не основной путь.
 
-### 3. `services/simulator` — генератор трафика для демо и тестов
-- Pygame-окно: дорога, машины, светофоры.
-- Поддерживает baseline (фиксированный таймер) и adaptive (через MQTT).
-- Может генерировать MQTT-события **вместо** ML — это режим эмуляции камер для разработки без видео.
-- Сценарии: symmetric, asymmetric, truck, ambulance, lost-camera, stuck.
-
-### 4. `web/` — дашборд
+### 4. `web/` — дашборд и визуализация
 - React + Vite + TS.
-- Лайв-схема дороги, очереди, состояние FSM, графики throughput/задержки.
-- Кнопки: ручное переключение, эмуляция спецтранспорта, переключение baseline/adaptive.
-- Подключение к контроллеру: REST + WS (события и метрики).
+- Основная визуализация живёт здесь (canvas/SVG по слепку из `corridor/sim/world`).
+- Карты/графики/кнопки оператора.
+- Подписка: REST + WS к контроллеру + MQTT-over-WS на mosquitto (для «world» напрямую).
 
 ## MQTT топики
 

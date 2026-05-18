@@ -24,6 +24,29 @@ QoS=1, retain — где указано.
 {"ts": 1715789123.0, "camera_id": "A_in", "fps": 24.7, "healthy": true}
 ```
 
+## Симулятор → UI (live world snapshot)
+
+### `corridor/sim/world` (qos=0, 10–20 Hz, не retain)
+Источник картинки для `web/`. Контроллер этот топик НЕ читает (он принимает решения только по CV-событиям).
+
+```json
+{
+  "ts": 1715789123.456,
+  "zone_length_m": 800,
+  "phase": "GREEN_A",
+  "vehicles": [
+    {"id": 42, "side": "A", "type": "car",   "x": 0.31, "y": 0.0, "speed": 13.4, "len_m": 4.5, "emergency": false},
+    {"id": 43, "side": "A", "type": "truck", "x": 0.18, "y": 0.0, "speed": 9.8,  "len_m": 12.0, "emergency": false},
+    {"id": 44, "side": "B", "type": "car",   "x": 0.92, "y": 0.0, "speed": 0.0,  "len_m": 4.5, "emergency": false}
+  ],
+  "queues": {"A": 7, "B": 12}
+}
+```
+
+- `x` — нормализованная позиция в зоне коридора [0..1]; 0 — въезд со стороны A, 1 — въезд со стороны B.
+- `y` — оффсет от центра полосы (резерв, для будущих manuevers).
+- `side` — направление движения (A→B или B→A).
+
 ## Контроллер → UI/Grafana
 
 ### `corridor/state` (retain=true)
