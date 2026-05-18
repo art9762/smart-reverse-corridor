@@ -23,7 +23,7 @@ describe('<RoadView />', () => {
 
   it('renders an SVG region with a corridor label', () => {
     render(<RoadView now={1010} />);
-    const svg = screen.getByRole('img');
+    const svg = screen.getAllByRole('img')[0];
     expect(svg.tagName.toLowerCase()).toBe('svg');
     expect(svg.getAttribute('aria-label')).toContain('phase');
   });
@@ -41,7 +41,7 @@ describe('<RoadView />', () => {
       payload: { ...baseState, phase: 'GREEN_B' },
     });
     render(<RoadView now={1010} />);
-    const svg = screen.getByRole('img');
+    const svg = screen.getAllByRole('img')[0];
     expect(svg.getAttribute('aria-label')).toContain('GREEN_B');
   });
 

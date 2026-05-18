@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { getWS, type WSStatus } from './api/ws';
 import { connectMqtt, mqttWsUrl } from './api/mqtt';
 import { useDashboard } from './store';
+import { LiveRoadView } from './components/LiveRoadView';
 import { RoadView } from './components/RoadView';
 import { PhasePanel } from './components/PhasePanel';
 import { QueueChart } from './components/QueueChart';
@@ -77,6 +78,8 @@ export default function App() {
 
       <main className="max-w-[1920px] mx-auto px-6 py-6 grid grid-cols-12 gap-6">
         <section className="col-span-12 xl:col-span-8 space-y-6">
+          {/* Live world snapshot from corridor/sim/world is now the hero panel. */}
+          <LiveRoadView now={now} />
           <PhasePanel now={now} />
           <RoadView now={now} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -94,7 +97,7 @@ export default function App() {
 
       <footer className="px-6 py-4 text-center text-xs text-slate-500">
         v0.1 · dashboard streams from <span className="font-mono">/ws</span>
-        {mqttWsUrl ? ' + direct MQTT WS' : ''}
+        {mqttWsUrl ? ' + direct MQTT WS (incl. corridor/sim/world)' : ''}
       </footer>
     </div>
   );
