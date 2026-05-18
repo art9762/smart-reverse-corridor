@@ -1,0 +1,6 @@
+pygame==2.5.2
+paho-mqtt==1.6.1
+pydantic-settings==2.2.1
+structlog==24.1.0
+click==8.1.7
+pytest==8.1.1
