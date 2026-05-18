@@ -34,9 +34,21 @@ All variables are prefixed with `VITE_` so Vite exposes them to the bundle.
 | ------------------ | -------------------------------- | -------------------------------------------------- |
 | `VITE_API_URL`     | `http://localhost:8000`          | Base URL for REST (`/state`, `/metrics`, `/override`, `/config`). |
 | `VITE_WS_URL`      | `ws://localhost:8000/ws`         | WebSocket relay from the controller.               |
-| `VITE_MQTT_WS_URL` | (unset)                          | Optional direct mosquitto WS endpoint for raw MQTT.|
+| `VITE_MQTT_WS_URL` | (unset)                          | Optional direct mosquitto WS endpoint for raw MQTT, **including the live world feed `corridor/sim/world`**. Without it, the **LiveRoadView** stays in the "Waiting for simulator…" state — the controller does not republish `corridor/sim/world` over `/ws`. |
 
 Copy `web/.env.example` to `web/.env.local` to override.
+
+## MQTT topics consumed
+
+- `corridor/state` — phase, queues, camera health (drives PhasePanel + RoadView).
+- `corridor/metrics/tick` — per-second metrics for the queue and throughput charts.
+- `corridor/alerts` — alerts feed.
+- `corridor/cam/<side>/<dir>/event|heartbeat` — recent events + camera dots.
+- `corridor/sim/world` — live world snapshot (10–20 Hz) for **LiveRoadView**.
+  Each snapshot carries `vehicles[]` with normalized `x ∈ [0..1]` along the
+  zone, `len_m` (used to scale the rendered car length), `type`, `side`,
+  `emergency`. The store keeps **only the last frame** — no history.
+  See `docs/MQTT.md` for the exact payload.
 
 ## Scripts
 
@@ -70,11 +82,11 @@ docker run --rm -p 8080:80 \
 ```
 web/
 ├── src/
-│   ├── api/           # client.ts (axios), ws.ts (controller /ws), mqtt.ts (mosquitto WS)
-│   ├── components/    # RoadView, PhasePanel, charts, AlertsFeed, ControlPanel, CameraHealth
+│   ├── api/           # client.ts (axios), ws.ts (controller /ws), mqtt.ts (mosquitto WS, incl. corridor/sim/world)
+│   ├── components/    # LiveRoadView (sim feed), RoadView, PhasePanel, charts, AlertsFeed, ControlPanel, CameraHealth
 │   ├── lib/format.ts  # time/number formatters
-│   ├── __tests__/     # vitest unit tests (store + RoadView)
-│   ├── store.ts       # zustand: state, metrics, alerts, queues, cameras
+│   ├── __tests__/     # vitest unit tests (store, RoadView, LiveRoadView, store.world)
+│   ├── store.ts       # zustand: state, metrics, alerts, queues, cameras, worldSnapshot
 │   ├── types.ts       # MQTT/REST type contracts (mirror docs/MQTT.md)
 │   ├── App.tsx        # composition + WS lifecycle
 │   ├── main.tsx
@@ -89,9 +101,16 @@ web/
 
 ## Dashboard panels
 
+- **LiveRoadView** — hero panel. Renders the road, repair zone, both signals
+  (with countdown from `corridor/state`), and every vehicle from the latest
+  `corridor/sim/world` snapshot. Cars are color-coded
+  (`car=blue`, `truck=orange`, `bus=teal`, `motorcycle=cyan`,
+  `emergency=red+blink`) and sized from `len_m`. Movement is a smooth 80 ms
+  CSS transition on the transform — no canvas, no rerender thrash. While
+  `worldSnapshot` is null the panel shows a "Waiting for simulator…" overlay.
 - **PhasePanel** — current FSM phase, big countdown, baseline/adaptive toggle.
-- **RoadView** — SVG road with two signals, vehicles inside the zone,
-  queue stacks at both ends, color-coded health.
+- **RoadView** — controller-driven SVG road with two signals, vehicles inside
+  the zone, queue stacks at both ends, color-coded health.
 - **QueueChart / ThroughputChart** — Recharts line charts driven by
   `corridor/metrics/tick`.
 - **ControlPanel** — operator overrides:
@@ -114,3 +133,11 @@ web/
   alert tagged `CAMERA_LOST` lands in the feed.
 - **Stuck vehicle** — `STUCK_VEHICLE` warning is highlighted; operator can
   Emergency Stop and inspect.
+
+## Testing without a backend
+
+`LiveRoadView` reads its data from the zustand store, so tests mock the store
+directly with `useDashboard.getState().ingestWorld(snapshot)` and assert that
+each vehicle from the snapshot is rendered. No mosquitto/MQTT runtime is
+required — see `src/__tests__/LiveRoadView.test.tsx` and
+`src/__tests__/store.world.test.ts`.

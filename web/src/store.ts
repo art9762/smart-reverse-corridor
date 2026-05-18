@@ -9,6 +9,7 @@ import type {
   Mode,
   Phase,
   WSMessage,
+  WorldSnapshot,
 } from './types';
 
 const MAX_METRICS_POINTS = 240; // ~4 min at 1 Hz
@@ -42,9 +43,11 @@ export interface DashboardState {
   alerts: CorridorAlert[];
   recentEvents: CamEvent[];
   cameras: Record<CameraId, CameraHealthSnapshot>;
+  worldSnapshot: WorldSnapshot | null;
   connected: boolean;
 
   ingest: (msg: WSMessage) => void;
+  ingestWorld: (snapshot: WorldSnapshot) => void;
   setConnected: (v: boolean) => void;
   acknowledgeAlert: (id: string) => void;
   reset: () => void;
@@ -70,6 +73,7 @@ export const useDashboard = create<DashboardState>((set) => ({
   alerts: [],
   recentEvents: [],
   cameras: emptyCameras(),
+  worldSnapshot: null,
   connected: false,
 
   setConnected: (v) => set({ connected: v }),
@@ -83,10 +87,13 @@ export const useDashboard = create<DashboardState>((set) => ({
       alerts: [],
       recentEvents: [],
       cameras: emptyCameras(),
+      worldSnapshot: null,
     }),
 
   acknowledgeAlert: (id) =>
     set((s) => ({ alerts: s.alerts.filter((a) => a.id !== id) })),
+
+  ingestWorld: (snapshot) => set({ worldSnapshot: snapshot }),
 
   ingest: (msg) =>
     set((prev) => {
@@ -123,6 +130,8 @@ export const useDashboard = create<DashboardState>((set) => ({
         const a = msg.payload;
         const id = a.id ?? `alert-${++alertCounter}-${a.ts}`;
         next.alerts = [{ ...a, id }, ...prev.alerts].slice(0, MAX_ALERTS);
+      } else if (msg.topic === 'corridor/sim/world') {
+        next.worldSnapshot = msg.payload;
       } else if (msg.topic.endsWith('/event')) {
         next.recentEvents = [msg.payload as CamEvent, ...prev.recentEvents].slice(
           0,

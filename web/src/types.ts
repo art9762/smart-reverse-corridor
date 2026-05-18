@@ -16,6 +16,8 @@ export type Mode = 'baseline' | 'adaptive';
 
 export type AlertLevel = 'emergency' | 'warning' | 'info';
 
+export type VehicleType = 'car' | 'truck' | 'bus' | 'motorcycle' | 'emergency';
+
 export interface CorridorState {
   phase: Phase;
   phase_started_at: number;
@@ -75,10 +77,43 @@ export interface PriorityWeights {
   PRIO_W_TRUCK: number;
 }
 
+/**
+ * Single vehicle frame from the simulator (or any future world publisher).
+ * Mirrors docs/MQTT.md: `corridor/sim/world`.
+ */
+export interface WorldVehicle {
+  id: number;
+  side: Side;
+  type: VehicleType;
+  /** Normalized position along the corridor [0..1]; 0 = side A entry, 1 = side B entry. */
+  x: number;
+  /** Lateral offset from lane center (reserved for future maneuvers). */
+  y: number;
+  /** Speed in m/s. */
+  speed: number;
+  /** Vehicle length in meters; used to scale the rendered car. */
+  len_m: number;
+  /** True for an emergency vehicle (ambulance, fire truck, etc.). */
+  emergency: boolean;
+}
+
+/**
+ * Live world snapshot consumed by the dashboard. Pushed at 10–20 Hz from
+ * the simulator, ignored by the controller.
+ */
+export interface WorldSnapshot {
+  ts: number;
+  zone_length_m: number;
+  phase: Phase;
+  vehicles: WorldVehicle[];
+  queues: { A: number; B: number };
+}
+
 export type WSMessage =
   | { topic: 'corridor/state'; payload: CorridorState }
   | { topic: 'corridor/metrics/tick'; payload: MetricsTick }
   | { topic: 'corridor/alerts'; payload: CorridorAlert }
+  | { topic: 'corridor/sim/world'; payload: WorldSnapshot }
   | {
       topic: `corridor/cam/${Side}/${Direction}/event`;
       payload: CamEvent;
