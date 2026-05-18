@@ -1,0 +1,15 @@
+# Auto-provision dashboards from /etc/grafana/dashboards (mounted from infra/grafana/dashboards)
+apiVersion: 1
+
+providers:
+  - name: 'corridor'
+    orgId: 1
+    folder: 'Smart Reverse Corridor'
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: false
