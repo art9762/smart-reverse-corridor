@@ -3,9 +3,16 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# IMPORTANT: do NOT set NODE_ENV=production here, otherwise npm install
-# skips devDependencies (typescript, vite, plugin-react) and the build
-# step fails with `tsc: not found` (exit 127).
+# Vite vshivает VITE_* переменные в build-time. Прокидываем через ARG.
+ARG VITE_API_URL=http://localhost:8000
+ARG VITE_WS_URL=ws://localhost:8000/ws
+ARG VITE_MQTT_WS_URL=ws://localhost:9001
+ENV VITE_API_URL=$VITE_API_URL \
+    VITE_WS_URL=$VITE_WS_URL \
+    VITE_MQTT_WS_URL=$VITE_MQTT_WS_URL
+
+# IMPORTANT: do NOT set NODE_ENV=production before npm install — otherwise
+# devDependencies (typescript, vite, plugin-react) get skipped and tsc fails.
 COPY package.json ./
 RUN --mount=type=cache,target=/root/.npm npm install --no-audit --no-fund --include=dev
 
