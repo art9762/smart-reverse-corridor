@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [controller, ml, simulator]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        working-directory: services/${{ matrix.service }}
+        run: |
+          if [ -f pyproject.toml ] || [ -f requirements.txt ]; then
+            python -m pip install --upgrade pip
+            [ -f requirements.txt ] && pip install -r requirements.txt || true
+            [ -f requirements-dev.txt ] && pip install -r requirements-dev.txt || true
+            pip install pytest ruff mypy || true
+          else
+            echo "no python project yet, skipping"
+            exit 0
+          fi
+      - name: Lint (ruff, optional)
+        working-directory: services/${{ matrix.service }}
+        run: ruff check . || true
+      - name: Tests
+        working-directory: services/${{ matrix.service }}
+        run: |
+          if [ -d tests ] || compgen -G "test_*.py" >/dev/null; then
+            pytest -q
+          else
+            echo "no tests yet"
+          fi
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install & build
+        working-directory: web
+        run: |
+          if [ -f package.json ]; then
+            npm ci || npm install
+            npm run build --if-present
+          else
+            echo "no web project yet"
+          fi
