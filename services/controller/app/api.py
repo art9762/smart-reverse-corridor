@@ -200,6 +200,16 @@ async def config(req: ConfigReq, request: Request) -> Dict[str, Any]:
     return eng.apply_config(payload)
 
 
+@router.post("/test/reset")
+async def test_reset(request: Request) -> Dict[str, Any]:
+    """Reset all counters, FSM back to RED_BOTH, clear metrics and alerts.
+
+    Intended for integration tests only — not for production use.
+    """
+    eng = _engine(request)
+    return eng.reset_for_test()
+
+
 @router.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
     await ws.accept()

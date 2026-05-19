@@ -108,6 +108,12 @@ class Engine:
         self._cameras_lost_alerted: Dict[str, float] = {}
         self._zone_clear_started: Optional[float] = None
 
+        # Fallback fixed-timer mode: activated when both cameras on a side are lost
+        # for longer than fallback_camera_loss_timeout_s.
+        # _fallback_mode: None = normal, "A" or "B" = side whose cameras are lost
+        self._fallback_mode: Optional[str] = None
+        self._fallback_side_lost_at: Dict[str, float] = {}  # side -> monotonic when both cams lost
+
         # Rolling-window metrics
         self._throughput_events: Dict[str, Deque[float]] = {"A": deque(), "B": deque()}
         self._vehicle_entries: Dict[int, Tuple[str, float]] = {}  # track_id -> (side, entry_time)
@@ -262,6 +268,12 @@ class Engine:
             self._phase_deadline = time.monotonic() + 1.0
             return
 
+        # Fallback fixed-timer mode: when both cameras on a side are lost,
+        # alternate GREEN_A / GREEN_B on a fixed timer, ignoring zone-empty guards.
+        if self._fallback_mode is not None and not self.fsm.is_emergency():
+            await self._advance_phase_fallback(phase)
+            return
+
         if phase == RED_BOTH:
             # Pick a side and try to go green
             next_side = Scheduler.pick_next_side(
@@ -297,6 +309,62 @@ class Engine:
             # Guard not met — keep waiting; check clear timeout
             self._phase_deadline = time.monotonic() + 0.5
             self._maybe_clear_timeout()
+            return
+
+    async def _advance_phase_fallback(self, phase: str) -> None:
+        """Fixed-timer phase advance used when cameras are lost on one side.
+
+        Alternates GREEN_A / GREEN_B on a fixed timer (fallback_green_s),
+        bypassing zone-empty guards since we can't trust the counters.
+        """
+        fallback_green = self.settings.fallback_green_s
+
+        if phase == RED_BOTH:
+            # Pick the side opposite to the lost-camera side first (safer),
+            # or just alternate from last green.
+            lost_side = self._fallback_mode  # "A" or "B"
+            # Prefer the side whose cameras are working
+            next_side = "B" if lost_side == "A" else "A"
+            if self.fsm.last_green_side == next_side:
+                # Already gave green to the healthy side; now give to lost side
+                next_side = lost_side
+
+            # Force green without zone-empty guard by temporarily patching
+            # the FSM's zone_empty_fn
+            orig_fn = self.fsm._zone_empty_fn
+            self.fsm._zone_empty_fn = lambda: True
+            try:
+                ok = self._try_go_green(next_side)
+            finally:
+                self.fsm._zone_empty_fn = orig_fn
+
+            if not ok:
+                self._phase_deadline = time.monotonic() + 0.5
+            else:
+                # Override the phase timer with fallback duration
+                self.phase_timer.restart(fallback_green)
+                self._phase_deadline = time.monotonic() + fallback_green
+            return
+
+        if phase in (GREEN_A, GREEN_B):
+            self.fsm.try_trigger("go_yellow")
+            self.phase_timer.restart(self.settings.yellow_s)
+            self._phase_deadline = time.monotonic() + self.settings.yellow_s
+            self._publish_state()
+            return
+
+        if phase in (YELLOW_A, YELLOW_B):
+            self.fsm.try_trigger("go_all_red")
+            self.phase_timer.restart(self.settings.all_red_guard_s)
+            self._phase_deadline = time.monotonic() + self.settings.all_red_guard_s
+            self._publish_state()
+            return
+
+        if phase in (ALL_RED_AFTER_A, ALL_RED_AFTER_B):
+            # In fallback mode, skip zone-empty check and go straight to RED_BOTH
+            self.fsm.try_trigger("halt_to_red")
+            self._begin_red_both(initial=False)
+            self._publish_state()
             return
 
     def _try_go_green(self, side: str) -> bool:
@@ -411,24 +479,70 @@ class Engine:
         if self.mqtt is not None:
             lost = self.mqtt.lost_cameras(self.settings.heartbeat_timeout_s)
             if lost:
-                lost_sides = {cid.split("_")[0] for cid in lost.keys()}
                 # If both cameras on a single side are lost — RED_BOTH safe state
                 for side in ("A", "B"):
                     if {f"{side}_in", f"{side}_out"}.issubset(lost.keys()):
-                        if not self.fsm.is_emergency() and self.fsm.phase != RED_BOTH:
+                        # Track when both cameras on this side were first lost
+                        if side not in self._fallback_side_lost_at:
+                            self._fallback_side_lost_at[side] = time.monotonic()
                             self._raise_alert(
                                 "warning",
                                 "CAMERA_LOST",
                                 f"both cameras on side {side} lost",
                             )
-                            self.fsm.try_trigger("halt_to_red")
-                            self._begin_red_both(initial=False)
-                            self._publish_state()
+                            if not self.fsm.is_emergency() and self.fsm.phase != RED_BOTH:
+                                self.fsm.try_trigger("halt_to_red")
+                                self._begin_red_both(initial=False)
+                                self._publish_state()
+
+                        # Check if we've been stuck in RED_BOTH long enough to activate fallback
+                        lost_duration = time.monotonic() - self._fallback_side_lost_at[side]
+                        if (
+                            lost_duration >= self.settings.fallback_camera_loss_timeout_s
+                            and self._fallback_mode is None
+                            and not self.fsm.is_emergency()
+                        ):
+                            self._fallback_mode = side
+                            self._raise_alert(
+                                "warning",
+                                "FALLBACK_TIMER_MODE",
+                                f"side {side} cameras lost for {lost_duration:.0f}s — switching to fixed-timer fallback",
+                            )
+                            log.warning(
+                                "engine.fallback_activated",
+                                side=side,
+                                lost_duration_s=lost_duration,
+                            )
+                    else:
+                        # Cameras recovered on this side
+                        if side in self._fallback_side_lost_at:
+                            del self._fallback_side_lost_at[side]
+                            if self._fallback_mode == side:
+                                self._fallback_mode = None
+                                self._raise_alert(
+                                    "info",
+                                    "FALLBACK_TIMER_CLEARED",
+                                    f"side {side} cameras recovered — resuming normal operation",
+                                )
+                                log.info("engine.fallback_deactivated", side=side)
+
                 for cid in lost:
                     last = self._cameras_lost_alerted.get(cid, 0.0)
                     if time.monotonic() - last >= 10.0:
                         self._cameras_lost_alerted[cid] = time.monotonic()
                         self._raise_alert("warning", "CAMERA_LOST", f"camera={cid}")
+            else:
+                # All cameras healthy — clear any fallback state
+                if self._fallback_side_lost_at:
+                    self._fallback_side_lost_at.clear()
+                if self._fallback_mode is not None:
+                    self._fallback_mode = None
+                    self._raise_alert(
+                        "info",
+                        "FALLBACK_TIMER_CLEARED",
+                        "all cameras recovered — resuming normal operation",
+                    )
+                    log.info("engine.fallback_deactivated", side="all")
 
     # ------------------------------------------------------------------
     # Overrides / config
@@ -440,6 +554,55 @@ class Engine:
 
     def apply_config(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         return self._apply_config(payload)
+
+    def reset_for_test(self) -> Dict[str, Any]:
+        """Reset engine state for integration tests.
+
+        Resets counters, returns FSM to RED_BOTH, clears metrics/alerts.
+        Does NOT restart MQTT or storage.
+        """
+        # Reset counters
+        self.counters.reset()
+
+        # Clear rolling metrics
+        for side in ("A", "B"):
+            self._throughput_events[side].clear()
+            self._recent_delays[side].clear()
+        self._vehicle_entries.clear()
+
+        # Clear alerts
+        self.state.alerts.clear()
+
+        # Reset queue state
+        self.state.queue_a = 0
+        self.state.queue_b = 0
+        self.state.throughput_5min = {"A": 0, "B": 0}
+        self.state.avg_delay_5min = {"A": 0.0, "B": 0.0}
+        self.state.max_queue_today = {"A": 0, "B": 0}
+        self.state.last_wait_started_a = time.monotonic()
+        self.state.last_wait_started_b = time.monotonic()
+
+        # Reset watchdog state
+        self._stuck_alerted.clear()
+        self._cameras_lost_alerted.clear()
+        self._zone_clear_started = None
+        self._fallback_mode = None
+        self._fallback_side_lost_at.clear()
+
+        # Force FSM back to RED_BOTH (go through emergency if needed)
+        if self.fsm.is_emergency():
+            self.fsm.try_trigger("resume")
+        elif self.fsm.phase not in (RED_BOTH,):
+            self.fsm.try_trigger("halt_to_red")
+            if self.fsm.phase not in (RED_BOTH,):
+                # In a YELLOW state — force via emergency + resume
+                self.fsm.try_trigger("emergency")
+                self.fsm.try_trigger("resume")
+
+        self._begin_red_both(initial=True)
+        self._publish_state()
+        log.info("engine.reset_for_test")
+        return {"ok": True, "phase": self.fsm.phase}
 
     def _apply_override(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         action = (payload or {}).get("action")

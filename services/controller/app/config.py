@@ -54,6 +54,10 @@ class Settings(BaseSettings):
     stuck_threshold_s: int = Field(default=30, alias="STUCK_THRESHOLD_S")
     heartbeat_timeout_s: int = Field(default=5, alias="HEARTBEAT_TIMEOUT_S")
 
+    # Fallback fixed-timer mode (when both cameras on a side are lost)
+    fallback_camera_loss_timeout_s: int = Field(default=30, alias="FALLBACK_CAMERA_LOSS_TIMEOUT_S")
+    fallback_green_s: int = Field(default=30, alias="FALLBACK_GREEN_S")
+
     # InfluxDB (optional)
     influx_url: Optional[str] = Field(default=None, alias="INFLUX_URL")
     influx_token: Optional[str] = Field(default=None, alias="INFLUX_TOKEN")
