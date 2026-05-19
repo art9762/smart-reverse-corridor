@@ -54,16 +54,27 @@ class Lights:
         elapsed = now - self.phase_started_at
         s = self.settings
         sequence = {
-            Phase.GREEN_A: (s.baseline_green_s, Phase.YELLOW),
+            Phase.GREEN_A: (s.baseline_green_s, Phase.YELLOW_A),
+            Phase.YELLOW_A: (s.baseline_yellow_s, Phase.ALL_RED_AFTER_A),
+            Phase.ALL_RED_AFTER_A: (s.baseline_all_red_s, Phase.GREEN_B),
+            Phase.GREEN_B: (s.baseline_green_s, Phase.YELLOW_B),
+            Phase.YELLOW_B: (s.baseline_yellow_s, Phase.ALL_RED_AFTER_B),
+            Phase.ALL_RED_AFTER_B: (s.baseline_all_red_s, Phase.GREEN_A),
+            # Legacy/fallback entries
             Phase.YELLOW: (s.baseline_yellow_s, Phase.ALL_RED),
-            Phase.ALL_RED: (s.baseline_all_red_s, None),  # decided below.
-            Phase.GREEN_B: (s.baseline_green_s, Phase.YELLOW),
+            Phase.ALL_RED: (s.baseline_all_red_s, None),
+            Phase.RED_BOTH: (s.baseline_all_red_s, Phase.GREEN_A),
+            Phase.EMERGENCY_STOP: (999999.0, Phase.EMERGENCY_STOP),
+            Phase.INIT: (1.0, Phase.RED_BOTH),
         }
-        duration, nxt = sequence[self.phase]
+        entry = sequence.get(self.phase)
+        if entry is None:
+            return
+        duration, nxt = entry
         if elapsed < duration:
             return
-        if self.phase is Phase.ALL_RED:
-            # Toggle which green follows ALL_RED.
+        if nxt is None:
+            # Legacy ALL_RED toggle
             nxt = Phase.GREEN_B if self._last_green is Phase.GREEN_A else Phase.GREEN_A
         log.debug("baseline: %s -> %s after %.1fs", self.phase.value, nxt.value, elapsed)
         if self.phase in (Phase.GREEN_A, Phase.GREEN_B):
@@ -79,11 +90,17 @@ class Lights:
         """Apply an external `corridor/state` snapshot (adaptive mode)."""
         if self.mode != "adaptive":
             return
-        try:
-            new_phase = Phase(payload["phase"])
-        except (KeyError, ValueError):
+        phase_str = payload.get("phase")
+        if not phase_str:
             log.warning("ignored corridor/state without phase: %s", payload)
             return
+        try:
+            new_phase = Phase(phase_str)
+        except ValueError:
+            # Controller may send phases we don't have in our enum (shouldn't
+            # happen now, but be defensive). Map unknown to ALL_RED for safety.
+            log.warning("unknown phase '%s', treating as ALL_RED", phase_str)
+            new_phase = Phase.ALL_RED
         if new_phase != self.phase:
             log.info("adaptive: phase %s -> %s", self.phase.value, new_phase.value)
         self.phase = new_phase

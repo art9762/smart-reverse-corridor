@@ -40,12 +40,24 @@ class VehicleType(str, Enum):
 
 
 class Phase(str, Enum):
-    """Phases mirror the controller FSM contract."""
+    """Phases mirror the controller FSM contract.
+
+    The controller publishes 8+ distinct phases. The simulator only cares
+    whether a side has green or not, but we must accept all phase strings
+    so that `apply_state` doesn't crash on unknown values.
+    """
 
     GREEN_A = "GREEN_A"
     GREEN_B = "GREEN_B"
     YELLOW = "YELLOW"
+    YELLOW_A = "YELLOW_A"
+    YELLOW_B = "YELLOW_B"
     ALL_RED = "ALL_RED"
+    ALL_RED_AFTER_A = "ALL_RED_AFTER_A"
+    ALL_RED_AFTER_B = "ALL_RED_AFTER_B"
+    RED_BOTH = "RED_BOTH"
+    EMERGENCY_STOP = "EMERGENCY_STOP"
+    INIT = "INIT"
 
 
 def kmh_to_ms(kmh: float) -> float:

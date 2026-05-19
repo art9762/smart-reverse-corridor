@@ -148,9 +148,9 @@ class Renderer:
             pg.draw.circle(s, color, (cx, h // 2 - 95), 8)
 
     def _light_color(self, side: Side, phase: Phase) -> tuple[int, int, int]:
-        if phase is Phase.YELLOW:
+        if phase in (Phase.YELLOW, Phase.YELLOW_A, Phase.YELLOW_B):
             return _COLOR_LIGHT_YELLOW
-        if phase is Phase.ALL_RED:
+        if phase in (Phase.ALL_RED, Phase.ALL_RED_AFTER_A, Phase.ALL_RED_AFTER_B, Phase.RED_BOTH, Phase.EMERGENCY_STOP, Phase.INIT):
             return _COLOR_LIGHT_RED
         if phase is Phase.GREEN_A and side is Side.A:
             return _COLOR_LIGHT_GREEN
