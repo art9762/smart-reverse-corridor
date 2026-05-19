@@ -306,12 +306,10 @@ def collect_to_csv(
 
 def set_mode(controller_url: str, mode: str) -> None:
     with httpx.Client(base_url=controller_url, timeout=5.0) as c:
-        r = c.post("/config", json={"mode": mode})
-        if r.status_code >= 400:
-            r = c.post(
-                "/override",
-                json={"action": "set_mode", "mode": mode, "by": "bench"},
-            )
+        r = c.post(
+            "/override",
+            json={"action": "mode_switch", "mode": mode, "by": "bench"},
+        )
         r.raise_for_status()
 
 
@@ -350,7 +348,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--mqtt-port", type=int, default=int(os.environ.get("MQTT_PORT", 1883)))
     p.add_argument(
         "--controller-url",
-        default=os.environ.get("CONTROLLER_URL", "http://127.0.0.1:8080"),
+        default=os.environ.get("CONTROLLER_URL", "http://127.0.0.1:8000"),
     )
     p.add_argument(
         "--scenario",
