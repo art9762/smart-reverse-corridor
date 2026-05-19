@@ -155,11 +155,17 @@ def _normalize_override(payload: Dict[str, Any]) -> Dict[str, Any]:
     if action == "emergency_stop":
         out["action"] = "emergency"
     elif action == "priority":
-        # Treat "priority for side X" as a force-phase to that side's green.
-        side = out.get("side")
-        if side in ("A", "B"):
-            out["action"] = "force_phase"
-            out["phase"] = f"GREEN_{side}"
+        reason = out.get("reason", "")
+        if isinstance(reason, str) and reason.startswith("mode:"):
+            # e.g. reason="mode:adaptive" -> mode_switch with mode=adaptive
+            out["action"] = "mode_switch"
+            out["mode"] = reason.split(":", 1)[1]
+        else:
+            # Treat "priority for side X" as a force-phase to that side's green.
+            side = out.get("side")
+            if side in ("A", "B"):
+                out["action"] = "force_phase"
+                out["phase"] = f"GREEN_{side}"
     return out
 
 

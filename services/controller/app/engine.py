@@ -14,7 +14,7 @@ import asyncio
 import time
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Deque, Dict, List, Optional, Set
+from typing import Any, Deque, Dict, List, Optional, Set, Tuple
 
 import structlog
 
@@ -107,6 +107,12 @@ class Engine:
         self._stuck_alerted: Dict[str, float] = {}
         self._cameras_lost_alerted: Dict[str, float] = {}
         self._zone_clear_started: Optional[float] = None
+
+        # Rolling-window metrics
+        self._throughput_events: Dict[str, Deque[float]] = {"A": deque(), "B": deque()}
+        self._vehicle_entries: Dict[int, Tuple[str, float]] = {}  # track_id -> (side, entry_time)
+        self._recent_delays: Dict[str, Deque[float]] = {"A": deque(maxlen=500), "B": deque(maxlen=500)}
+        self._metrics_window_s: float = 300.0  # 5 minutes
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -210,14 +216,27 @@ class Engine:
     def _handle_cam_event(self, side: str, direction: str, payload: Dict[str, Any]) -> None:
         self.counters.on_event(side, direction)
         side_u = side.upper()
-        # Naive queue model: every "in" event without a matching "out" yet is
-        # in queue or in the corridor. We keep queue == inside as a proxy for
-        # vehicles waiting/inside; refined by simulator/UI in production.
+        now = time.time()
+
         if direction == "in":
-            self.state.throughput_5min[side_u] = (
-                self.state.throughput_5min.get(side_u, 0) + 1
-            )
-        # Per-tick queue snapshot lives in the tick loop.
+            # Record entry timestamp for rolling throughput
+            self._throughput_events[side_u].append(now)
+            # Track vehicle for delay calculation
+            track_id = payload.get("track_id")
+            if track_id is not None:
+                self._vehicle_entries[int(track_id)] = (side_u, now)
+        elif direction == "out":
+            # Calculate delay for this vehicle
+            track_id = payload.get("track_id")
+            if track_id is not None:
+                key = int(track_id)
+                entry = self._vehicle_entries.pop(key, None)
+                if entry is not None:
+                    _, entry_time = entry
+                    delay = now - entry_time
+                    if delay > 0:
+                        self._recent_delays[side_u].append(delay)
+
         self.storage.log_event("cam_event", {"side": side, "dir": direction, **payload})
 
     # ------------------------------------------------------------------
@@ -335,6 +354,7 @@ class Engine:
             while True:
                 await asyncio.sleep(1.0)
                 self._refresh_queues()
+                self._compute_rolling_metrics()
                 self._run_watchdogs()
                 self._publish_state()
                 self._publish_metrics()
@@ -342,16 +362,39 @@ class Engine:
             raise
 
     def _refresh_queues(self) -> None:
-        # Approximate queue size as inside count + recent un-served entries.
-        # The simulator/ML provide truer queue numbers via override.
-        self.state.queue_a = max(self.state.queue_a, self.counters.inside("A"))
-        self.state.queue_b = max(self.state.queue_b, self.counters.inside("B"))
+        # Queue = vehicles currently inside the zone from that side
+        self.state.queue_a = self.counters.inside("A")
+        self.state.queue_b = self.counters.inside("B")
         self.state.max_queue_today["A"] = max(
             self.state.max_queue_today["A"], self.state.queue_a
         )
         self.state.max_queue_today["B"] = max(
             self.state.max_queue_today["B"], self.state.queue_b
         )
+
+    def _compute_rolling_metrics(self) -> None:
+        now = time.time()
+        cutoff = now - self._metrics_window_s
+
+        for side in ("A", "B"):
+            # Prune old throughput events and count remaining
+            events = self._throughput_events[side]
+            while events and events[0] < cutoff:
+                events.popleft()
+            self.state.throughput_5min[side] = len(events)
+
+            # Compute average delay from recent completions
+            delays = self._recent_delays[side]
+            if delays:
+                self.state.avg_delay_5min[side] = round(sum(delays) / len(delays), 2)
+            else:
+                self.state.avg_delay_5min[side] = 0.0
+
+        # Prune stale vehicle entries (no matching "out" after 10 min)
+        stale_cutoff = now - 600.0
+        stale_keys = [k for k, (_, t) in self._vehicle_entries.items() if t < stale_cutoff]
+        for k in stale_keys:
+            del self._vehicle_entries[k]
 
     def _run_watchdogs(self) -> None:
         # Stuck vehicles per side
