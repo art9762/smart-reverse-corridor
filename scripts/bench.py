@@ -87,7 +87,10 @@ class Scenario:
 BUILTIN_SCENARIOS: dict[str, Scenario] = {
     "symmetric": Scenario("symmetric", 1.0, 1.0, 0.05, "Even traffic both ways"),
     "asymmetric": Scenario("asymmetric", 1.5, 0.4, 0.05, "Rush hour from A"),
+    # Aliases matching simulator scenario names (asymmetric_peak, truck_jam)
+    "asymmetric_peak": Scenario("asymmetric_peak", 0.55, 0.10, 0.05, "Asymmetric peak hour (A heavy, B light)"),
     "truck-heavy": Scenario("truck-heavy", 0.8, 0.8, 0.30, "Long vehicles dominate"),
+    "truck_jam": Scenario("truck_jam", 0.25, 0.25, 0.45, "Truck jam — high truck share both sides"),
     "low-load": Scenario("low-load", 0.2, 0.2, 0.0, "Off-peak"),
 }
 
