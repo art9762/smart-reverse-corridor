@@ -263,9 +263,6 @@ export class DemoSimulator {
   }
 
   private _moveVehicles(dtS: number): void {
-    // Mark vehicles that have an emergency vehicle behind them (same side)
-    this._markYieldToEmergency();
-
     // Sort by x for collision detection: A-side vehicles travel 0→1, B-side 1→0
     const sortedA = [...this.vehicles.values()]
       .filter(v => v.side === 'A')
@@ -277,25 +274,6 @@ export class DemoSimulator {
 
     for (const veh of sortedA) this._moveOne(veh, sortedA, dtS);
     for (const veh of sortedB) this._moveOne(veh, sortedB, dtS);
-  }
-
-  /** Mark vehicles that should yield (speed up/clear) for an emergency vehicle behind them. */
-  private _markYieldToEmergency(): void {
-    for (const veh of this.vehicles.values()) {
-      (veh as SimVehicle & { _yieldEmergency?: boolean })._yieldEmergency = false;
-    }
-    for (const emVeh of this.vehicles.values()) {
-      if (!emVeh.emergency) continue;
-      // Find vehicles of same side that are ahead of emergency and close
-      for (const other of this.vehicles.values()) {
-        if (other.id === emVeh.id || other.side !== emVeh.side || other.emergency) continue;
-        const ahead = emVeh.side === 'A' ? other.x > emVeh.x : other.x < emVeh.x;
-        const dist = Math.abs(other.x - emVeh.x);
-        if (ahead && dist < 0.15) {
-          (other as SimVehicle & { _yieldEmergency?: boolean })._yieldEmergency = true;
-        }
-      }
-    }
   }
 
   private _moveOne(veh: SimVehicle, siblings: SimVehicle[], dtS: number): void {
@@ -374,15 +352,6 @@ export class DemoSimulator {
         const ratio = effectiveGap / comfortGap;
         targetSpeed = veh.cruiseSpeed * ratio * ratio;
       }
-    }
-
-    // Vehicles yielding to emergency behind them: boost speed but NOT past stop-line
-    if ((veh as SimVehicle & { _yieldEmergency?: boolean })._yieldEmergency && !veh.emergency) {
-      if (canEnter) {
-        // Can enter zone — speed up to clear
-        targetSpeed = Math.max(targetSpeed, veh.cruiseSpeed * 1.3);
-      }
-      // If can't enter (red), don't override — stay at stop-line
     }
 
     // Smooth acceleration / deceleration
