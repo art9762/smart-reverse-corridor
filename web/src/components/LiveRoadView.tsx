@@ -134,6 +134,10 @@ export function LiveRoadView({ now }: LiveRoadViewProps) {
               <stop offset="0%" stopColor="#1e293b" />
               <stop offset="100%" stopColor="#0f172a" />
             </linearGradient>
+            <linearGradient id="live-zone-bg" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#1a1a0a" />
+              <stop offset="100%" stopColor="#0d0d05" />
+            </linearGradient>
             <pattern
               id="repair-stripes"
               width="14"
@@ -143,6 +147,16 @@ export function LiveRoadView({ now }: LiveRoadViewProps) {
             >
               <rect width="14" height="14" fill="#3f2a04" />
               <rect width="7" height="14" fill="#facc15" opacity="0.85" />
+            </pattern>
+            <pattern
+              id="hazard-boundary"
+              width="20"
+              height="20"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <rect width="20" height="20" fill="#1a0a00" />
+              <rect width="10" height="20" fill="#f97316" opacity="0.7" />
             </pattern>
             <marker
               id="arrow-r"
@@ -155,6 +169,20 @@ export function LiveRoadView({ now }: LiveRoadViewProps) {
             >
               <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
             </marker>
+            <filter id="vehicle-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            <filter id="signal-glow" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
 
           {/* approach A: 2 lanes */}
@@ -282,16 +310,20 @@ function Approach2Lane({
         fill="url(#live-lane)"
         stroke="#1f2a52"
       />
-      {/* lane divider */}
+      {/* dashed center line in approach zones */}
       <line
         x1={x1}
         x2={x2}
         y1={yCenter}
         y2={yCenter}
-        stroke="#475569"
+        stroke="#facc15"
         strokeWidth={1.5}
         strokeDasharray="14 12"
+        opacity={0.55}
       />
+      {/* solid edge lane markings */}
+      <line x1={x1} x2={x2} y1={top + 2} y2={top + 2} stroke="#e2e8f0" strokeWidth={1} opacity={0.25} />
+      <line x1={x1} x2={x2} y1={top + LANE_H_2 - 2} y2={top + LANE_H_2 - 2} stroke="#e2e8f0" strokeWidth={1} opacity={0.25} />
       <text
         x={align === 'left' ? x1 + 6 : x2 - 6}
         y={top - 8}
@@ -375,14 +407,20 @@ function SingleLaneZone({
   const bot = yCenter + LANE_H_1 / 2;
   return (
     <g aria-label="repair zone">
+      {/* Darker zone background to visually distinguish repair area */}
       <rect
         x={x1}
         y={top}
         width={x2 - x1}
         height={LANE_H_1}
-        fill="url(#live-lane)"
-        stroke="#1f2a52"
+        fill="url(#live-zone-bg)"
+        stroke="#f97316"
+        strokeWidth={1.5}
+        strokeOpacity={0.5}
       />
+      {/* Construction zone boundary markers at entry/exit */}
+      <rect x={x1 - 8} y={top - 12} width={16} height={LANE_H_1 + 24} fill="url(#hazard-boundary)" rx={2} opacity={0.9} />
+      <rect x={x2 - 8} y={top - 12} width={16} height={LANE_H_1 + 24} fill="url(#hazard-boundary)" rx={2} opacity={0.9} />
       {/* zone-not-empty warning overlay: pulses red when vehicles remain during non-green */}
       {zoneOccupied && (
         <rect
@@ -408,6 +446,17 @@ function SingleLaneZone({
       {/* yellow-black hazard stripes along both edges */}
       <rect x={x1} y={top - 8} width={x2 - x1} height={6} fill="url(#repair-stripes)" />
       <rect x={x1} y={bot + 2} width={x2 - x1} height={6} fill="url(#repair-stripes)" />
+      {/* Dashed center line in zone */}
+      <line
+        x1={x1 + 20}
+        x2={x2 - 20}
+        y1={yCenter}
+        y2={yCenter}
+        stroke="#facc15"
+        strokeWidth={1.5}
+        strokeDasharray="18 14"
+        opacity={0.4}
+      />
 
       {/* repair sign */}
       <g transform={`translate(${(x1 + x2) / 2 - 18}, ${top - 38})`} aria-label="repair-sign">
@@ -547,9 +596,19 @@ function Vehicle({
       data-zone={zone}
       style={{
         transform: `translate(${cx}px, ${cy}px) rotate(${rotate}deg)`,
-        transition: 'transform 80ms linear',
+        transition: 'transform 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
       }}
     >
+      {/* shadow/glow under vehicle */}
+      <ellipse
+        cx={0}
+        cy={heightPx / 2 + 3}
+        rx={lenPx / 2 + 2}
+        ry={4}
+        fill={fill}
+        opacity={0.25}
+        style={{ filter: 'blur(3px)' }}
+      />
       <g transform={`translate(${-lenPx / 2}, ${-heightPx / 2})`}>
         <rect
           width={lenPx}
@@ -559,6 +618,7 @@ function Vehicle({
           fill={fill}
           stroke="#0f172a"
           strokeWidth={1}
+          filter={v.emergency ? 'url(#vehicle-glow)' : undefined}
         >
           {v.emergency && (
             <animate
@@ -579,6 +639,9 @@ function Vehicle({
           fill="#0f172a"
           opacity={0.45}
         />
+        {/* headlights */}
+        <rect x={lenPx - 3} y={2} width={2} height={3} rx={1} fill="#fef9c3" opacity={0.9} />
+        <rect x={lenPx - 3} y={heightPx - 5} width={2} height={3} rx={1} fill="#fef9c3" opacity={0.9} />
       </g>
     </g>
   );
@@ -607,27 +670,60 @@ function Signal({
 }) {
   const fill =
     active === 'green' ? '#22c55e' : active === 'yellow' ? '#eab308' : '#ef4444';
+  const glowColor =
+    active === 'green'
+      ? 'rgba(34,197,94,0.6)'
+      : active === 'yellow'
+        ? 'rgba(234,179,8,0.6)'
+        : 'rgba(239,68,68,0.6)';
   return (
     <g
-      transform={`translate(${x - 20}, ${y})`}
+      transform={`translate(${x - 22}, ${y})`}
       aria-label={`Signal ${side}`}
       data-testid={`live-signal-${side}`}
     >
-      <rect width={40} height={56} rx={8} fill="#0b1020" stroke="#1f2a52" />
-      <circle
-        cx={20}
-        cy={20}
-        r={11}
-        fill={fill}
-        style={{ filter: `drop-shadow(0 0 6px ${fill})`, transition: 'fill 200ms ease' }}
+      {/* pole */}
+      <rect x={19} y={56} width={6} height={20} rx={2} fill="#334155" />
+      {/* housing */}
+      <rect width={44} height={60} rx={10} fill="#0b1020" stroke="#334155" strokeWidth={1.5} />
+      {/* ambient glow behind housing */}
+      <rect
+        width={44}
+        height={60}
+        rx={10}
+        fill={glowColor}
+        opacity={0.15}
+        style={{ transition: 'fill 300ms ease, opacity 300ms ease' }}
       />
+      {/* red slot (always dim) */}
+      <circle cx={22} cy={16} r={10} fill={active === 'red' ? fill : '#1e293b'} />
+      {active === 'red' && (
+        <circle cx={22} cy={16} r={10} fill={fill} filter="url(#signal-glow)" opacity={0.8} />
+      )}
+      {/* yellow slot */}
+      <circle cx={22} cy={32} r={10} fill={active === 'yellow' ? fill : '#1e293b'} />
+      {active === 'yellow' && (
+        <circle cx={22} cy={32} r={10} fill={fill} filter="url(#signal-glow)" opacity={0.8} />
+      )}
+      {/* green slot */}
+      <circle cx={22} cy={48} r={10} fill={active === 'green' ? fill : '#1e293b'} />
+      {active === 'green' && (
+        <>
+          <circle cx={22} cy={48} r={10} fill={fill} filter="url(#signal-glow)" opacity={0.8} />
+          <circle cx={22} cy={48} r={10} fill={fill} opacity={0.3}>
+            <animate attributeName="r" values="10;14;10" dur="1.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.3;0;0.3" dur="1.5s" repeatCount="indefinite" />
+          </circle>
+        </>
+      )}
+      {/* label */}
       <text
-        x={20}
-        y={46}
+        x={22}
+        y={78}
         textAnchor="middle"
         fontSize={11}
         fontFamily="monospace"
-        fill="#e2e8f0"
+        fill="#94a3b8"
       >
         {side} {countdown}s
       </text>

@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -35,7 +35,17 @@ export function QueueChart() {
       </div>
       <div className="h-64 p-2">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 16, right: 16, bottom: 8, left: 0 }}>
+          <AreaChart data={data} margin={{ top: 16, right: 16, bottom: 8, left: 0 }}>
+            <defs>
+              <linearGradient id="queueGradA" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="#22c55e" stopOpacity={0.02} />
+              </linearGradient>
+              <linearGradient id="queueGradB" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 6" stroke="#1f2a52" />
             <XAxis
               dataKey="time"
@@ -53,23 +63,27 @@ export function QueueChart() {
               }}
               labelStyle={{ color: '#94a3b8' }}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="A"
               stroke="#22c55e"
-              strokeWidth={2}
+              strokeWidth={2.5}
+              fill="url(#queueGradA)"
               dot={false}
               isAnimationActive={false}
+              style={{ filter: 'drop-shadow(0 0 4px rgba(34,197,94,0.5))' }}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="B"
               stroke="#60a5fa"
-              strokeWidth={2}
+              strokeWidth={2.5}
+              fill="url(#queueGradB)"
               dot={false}
               isAnimationActive={false}
+              style={{ filter: 'drop-shadow(0 0 4px rgba(96,165,250,0.5))' }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>

@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -39,7 +39,17 @@ export function DelayChart() {
       </div>
       <div className="h-64 p-2">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 16, right: 16, bottom: 8, left: 0 }}>
+          <AreaChart data={data} margin={{ top: 16, right: 16, bottom: 8, left: 0 }}>
+            <defs>
+              <linearGradient id="delayGradA" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#f97316" stopOpacity={0.02} />
+              </linearGradient>
+              <linearGradient id="delayGradB" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#e879f9" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#e879f9" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 6" stroke="#1f2a52" />
             <XAxis
               dataKey="time"
@@ -61,25 +71,29 @@ export function DelayChart() {
                 return n === null ? ['—', ''] : [`${n}s`, ''];
               }}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="A"
               stroke="#f97316"
-              strokeWidth={2}
+              strokeWidth={2.5}
+              fill="url(#delayGradA)"
               dot={false}
               isAnimationActive={false}
               connectNulls={false}
+              style={{ filter: 'drop-shadow(0 0 4px rgba(249,115,22,0.4))' }}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="B"
               stroke="#e879f9"
-              strokeWidth={2}
+              strokeWidth={2.5}
+              fill="url(#delayGradB)"
               dot={false}
               isAnimationActive={false}
               connectNulls={false}
+              style={{ filter: 'drop-shadow(0 0 4px rgba(232,121,249,0.4))' }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>

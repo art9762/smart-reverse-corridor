@@ -15,7 +15,7 @@ include .env
 export
 endif
 
-.PHONY: help up up-all down restart logs ps demo demo-quick bench lint lint-py lint-web test test-py test-web build clean nuke env
+.PHONY: help up up-all down restart logs ps demo demo-stop demo-showcase demo-quick bench lint lint-py lint-web test test-py test-web build clean nuke env
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make <target>\n\nTargets:\n"} \
@@ -53,6 +53,12 @@ demo: env ## Bring up stack and run the asymmetric simulator scenario
 	@echo "  InfluxDB : http://localhost:8086"
 	@echo ""
 	$(COMPOSE) logs -f --tail=50 controller simulator
+
+demo-stop: ## Stop the demo (sim + ml profiles)
+	@bash scripts/demo-stop.sh
+
+demo-showcase: ## Run demo with showcase scenario
+	@bash scripts/demo.sh showcase
 
 demo-quick: ## Quick 60s demo (no ML)
 	docker compose up -d

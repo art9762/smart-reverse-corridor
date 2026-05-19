@@ -16,6 +16,72 @@ function safeInt(n: number): string {
   return Number.isFinite(n) ? String(Math.max(0, Math.round(n))) : '—';
 }
 
+/** Circular SVG countdown ring */
+function CircularCountdown({
+  progress,
+  remaining,
+  color,
+}: {
+  progress: number;
+  remaining: number;
+  color: string;
+}) {
+  const R = 52;
+  const CIRC = 2 * Math.PI * R;
+  const strokeColor =
+    color === 'green' ? '#22c55e' : color === 'yellow' ? '#eab308' : '#ef4444';
+  const glowColor =
+    color === 'green'
+      ? 'rgba(34,197,94,0.5)'
+      : color === 'yellow'
+        ? 'rgba(234,179,8,0.5)'
+        : 'rgba(239,68,68,0.5)';
+  // dashoffset: 0 = full ring, CIRC = empty ring
+  const dashOffset = CIRC * (1 - progress);
+
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: 128, height: 128 }}>
+      <svg width={128} height={128} viewBox="0 0 128 128" style={{ position: 'absolute', top: 0, left: 0 }}>
+        {/* track */}
+        <circle
+          cx={64}
+          cy={64}
+          r={R}
+          fill="none"
+          stroke="#1e293b"
+          strokeWidth={8}
+        />
+        {/* progress ring */}
+        <circle
+          cx={64}
+          cy={64}
+          r={R}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={8}
+          strokeLinecap="round"
+          strokeDasharray={CIRC}
+          strokeDashoffset={dashOffset}
+          transform="rotate(-90 64 64)"
+          style={{
+            transition: 'stroke-dashoffset 700ms ease-out, stroke 600ms ease',
+            filter: `drop-shadow(0 0 6px ${glowColor})`,
+          }}
+        />
+      </svg>
+      <div className="flex flex-col items-center z-10">
+        <span
+          className="text-4xl font-bold font-mono phase-transition"
+          style={{ color: strokeColor }}
+        >
+          {formatSeconds(remaining)}
+        </span>
+        <span className="text-xs text-slate-500 uppercase tracking-wider mt-0.5">left</span>
+      </div>
+    </div>
+  );
+}
+
 export function PhasePanel({ now }: { now: number }) {
   const state = useDashboard((s) => s.state);
   const phase = state?.phase ?? 'RED_BOTH';
@@ -85,24 +151,14 @@ export function PhasePanel({ now }: { now: number }) {
           </div>
         </div>
 
-        <div>
-          <div className="text-xs uppercase tracking-widest text-slate-500">Countdown</div>
-          <div className="text-5xl md:text-6xl font-bold font-mono mt-1 phase-transition">
-            {formatSeconds(remaining)}
-          </div>
-          <div className="mt-3 h-2 bg-bg-raised rounded-full overflow-hidden">
-            <div
-              className={`h-full transition-[width] duration-700 ease-out ${
-                color === 'green'
-                  ? 'bg-accent-green'
-                  : color === 'yellow'
-                    ? 'bg-accent-yellow'
-                    : 'bg-accent-red'
-              }`}
-              style={{ width: `${Math.round(progress * 100)}%` }}
-            />
-          </div>
-          <div className="text-xs text-slate-500 mt-1 font-mono">
+        <div className="flex flex-col items-center gap-3">
+          <div className="text-xs uppercase tracking-widest text-slate-500 self-start">Countdown</div>
+          <CircularCountdown
+            progress={progress}
+            remaining={remaining}
+            color={color}
+          />
+          <div className="text-xs text-slate-500 font-mono">
             {safeInt(elapsed)}s / {safeInt(total)}s
           </div>
         </div>

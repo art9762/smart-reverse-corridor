@@ -79,3 +79,50 @@ body {
 .signal-glow-red {
   box-shadow: 0 0 24px rgba(239, 68, 68, 0.5), inset 0 0 10px rgba(239, 68, 68, 0.55);
 }
+
+/* Header animated gradient border */
+.header-glow {
+  position: relative;
+}
+.header-glow::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #3b82f6, #8b5cf6, #3b82f6, transparent);
+  background-size: 200% 100%;
+  animation: headerShimmer 4s ease-in-out infinite;
+}
+
+@keyframes headerShimmer {
+  0%, 100% { background-position: 200% 0; }
+  50% { background-position: -200% 0; }
+}
+
+/* Fade-in stagger for page load */
+.fade-in-up {
+  animation: fadeInUp 0.5s ease-out both;
+}
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Vehicle smooth movement */
+.vehicle-smooth {
+  transition: transform 150ms ease-out;
+}
+
+/* Construction zone hatching */
+.zone-hazard {
+  fill: url(#hazardPattern);
+  opacity: 0.15;
+}

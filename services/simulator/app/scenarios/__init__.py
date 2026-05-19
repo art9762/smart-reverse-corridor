@@ -44,6 +44,7 @@ from .truck_jam import build as build_truck_jam  # noqa: E402
 from .ambulance import build as build_ambulance  # noqa: E402
 from .lost_camera import build as build_lost_camera  # noqa: E402
 from .stuck_vehicle import build as build_stuck_vehicle  # noqa: E402
+from .showcase import build as build_showcase  # noqa: E402
 
 
 SCENARIOS: dict[str, Callable[[int | None], Scenario]] = {
@@ -57,6 +58,7 @@ SCENARIOS: dict[str, Callable[[int | None], Scenario]] = {
     "lost_camera": build_lost_camera,
     "stuck": build_stuck_vehicle,
     "stuck_vehicle": build_stuck_vehicle,
+    "showcase": build_showcase,
 }
 
 

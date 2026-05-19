@@ -60,7 +60,7 @@ export default function App() {
 
   return (
     <div className="min-h-full bg-bg-base bg-grid">
-      <header className="border-b border-bg-edge/70 bg-bg-panel/60 backdrop-blur sticky top-0 z-20">
+      <header className="border-b border-bg-edge/70 bg-bg-panel/60 backdrop-blur sticky top-0 z-20 header-glow">
         <div className="max-w-[1920px] mx-auto px-6 py-3 flex items-center gap-4">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-accent-green animate-pulseSoft" />
@@ -92,7 +92,7 @@ export default function App() {
       </header>
 
       <main className="max-w-[1920px] mx-auto px-4 sm:px-6 py-4 sm:py-6 grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6">
-        <section className="col-span-1 xl:col-span-8 space-y-4 sm:space-y-6">
+        <section className="col-span-1 xl:col-span-8 space-y-4 sm:space-y-6 fade-in-up" style={{ animationDelay: '0.1s' }}>
           {/* Live world snapshot from corridor/sim/world is the hero panel. */}
           <LiveRoadView now={now} />
           <PhasePanel now={now} />
@@ -104,7 +104,7 @@ export default function App() {
           <ComparisonPanel />
         </section>
 
-        <aside className="col-span-1 xl:col-span-4 space-y-4 sm:space-y-6">
+        <aside className="col-span-1 xl:col-span-4 space-y-4 sm:space-y-6 fade-in-up" style={{ animationDelay: '0.25s' }}>
           <ControlPanel />
           {/* Compact mini-map of the corridor in the sidebar. */}
           <RoadView now={now} />

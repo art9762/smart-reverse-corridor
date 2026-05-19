@@ -56,6 +56,7 @@ def _setup_logging(level: str) -> None:
             "lost_camera",
             "stuck",
             "stuck_vehicle",
+            "showcase",
         ]
     ),
     default="symmetric",

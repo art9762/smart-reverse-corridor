@@ -54,6 +54,15 @@ make demo      # запускает симулятор и открывает д�
 
 Открой: <http://localhost:5173>.
 
+## Quick Demo (one command)
+
+```bash
+bash scripts/demo.sh          # запуск (сценарий asymmetric_peak)
+bash scripts/demo-stop.sh     # остановка
+```
+
+Дашборд: <http://localhost:5173> · API: <http://localhost:8000> · Grafana: <http://localhost:3001>
+
 ## Структура репозитория
 
 ```
