@@ -29,9 +29,9 @@ export function RoadView({ now: _now }: RoadViewProps) {
     <div className="card overflow-hidden">
       <div className="px-5 py-3 border-b border-bg-edge flex items-center justify-between">
         <div className="text-sm uppercase tracking-wider text-slate-400">
-          Corridor mini-map
+          Мини-карта коридора
         </div>
-        <div className="text-xs text-slate-500 font-mono">phase {phase}</div>
+        <div className="text-xs text-slate-500 font-mono">фаза {phase}</div>
       </div>
       <div className="p-3" data-testid="road-view-container">
         <svg
@@ -40,7 +40,7 @@ export function RoadView({ now: _now }: RoadViewProps) {
             ring === 'green' ? 'shadow-[0_0_30px_rgba(34,197,94,0.15)]' : ''
           }`}
           role="img"
-          aria-label={`Mini corridor view, phase ${phase}`}
+          aria-label={`Мини-карта коридора, фаза ${phase}`}
         >
           {/* approach A (2 lanes — drawn as a thicker block) */}
           <rect x={4} y={32} width={ZONE_X - 4} height={26} fill="#1e293b" stroke="#1f2a52" />
@@ -58,10 +58,10 @@ export function RoadView({ now: _now }: RoadViewProps) {
           <rect x={W - ZONE_X} y={32} width={ZONE_X - 4} height={26} fill="#1e293b" stroke="#1f2a52" />
 
           {/* signals */}
-          <g aria-label="Signal A">
+          <g aria-label="Сигнал A">
             <Lamp x={ZONE_X - 14} y={20} active={signalState(phase, 'A')} />
           </g>
-          <g aria-label="Signal B">
+          <g aria-label="Сигнал B">
             <Lamp x={W - ZONE_X + 14} y={20} active={signalState(phase, 'B')} />
           </g>
 
