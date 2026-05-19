@@ -37,15 +37,15 @@ export interface ControllerTimings {
 }
 
 export const DEFAULT_TIMINGS: ControllerTimings = {
-  greenMinS: 15,
-  greenMaxS: 90,
-  baseGreenS: 30,
-  yellowS: 3,
-  allRedGuardS: 5,
-  clearTimeoutS: 60,
-  prioWQueue: 2.0,
-  prioWWait: 0.5,
-  prioWOtherEmpty: 5.0,
+  greenMinS: 8,
+  greenMaxS: 45,
+  baseGreenS: 15,
+  yellowS: 2,
+  allRedGuardS: 3,
+  clearTimeoutS: 30,
+  prioWQueue: 1.5,
+  prioWWait: 0.3,
+  prioWOtherEmpty: 3.0,
   prioWTruck: 0,
 };
 

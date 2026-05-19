@@ -20,15 +20,15 @@ export const DEFAULT_SIM_CONFIG: SimConfig = {
   zoneLengthM: 800,
   spawnRateA: 0.4,   // vehicles per second
   spawnRateB: 0.4,
-  minGapM: 5,
-  queueDepthNorm: 0.12, // how far behind zone entry vehicles queue (normalised)
+  minGapM: 8,
+  queueDepthNorm: 0.03, // how far behind zone entry vehicles queue (normalised)
   tickMs: 50,          // 20 Hz world publish
   vehicleSpecs: {
-    car:         { weight: 0.70, len_m: 4.5,  speedMin: 8,  speedMax: 14 },
-    truck:       { weight: 0.15, len_m: 12.0, speedMin: 5,  speedMax: 9  },
-    bus:         { weight: 0.08, len_m: 10.0, speedMin: 5,  speedMax: 9  },
-    motorcycle:  { weight: 0.05, len_m: 2.2,  speedMin: 10, speedMax: 18 },
-    emergency:   { weight: 0.02, len_m: 5.5,  speedMin: 12, speedMax: 20 },
+    car:         { weight: 0.70, len_m: 4.5,  speedMin: 45,  speedMax: 70 },
+    truck:       { weight: 0.15, len_m: 12.0, speedMin: 30,  speedMax: 50 },
+    bus:         { weight: 0.08, len_m: 10.0, speedMin: 30,  speedMax: 50 },
+    motorcycle:  { weight: 0.05, len_m: 2.2,  speedMin: 50,  speedMax: 80 },
+    emergency:   { weight: 0.02, len_m: 5.5,  speedMin: 60,  speedMax: 90 },
   },
 };
 
@@ -216,31 +216,46 @@ export class DemoSimulator {
     const spec = this.config.vehicleSpecs[type] ?? this.config.vehicleSpecs.car;
     const cruise = spec.speedMin + Math.random() * (spec.speedMax - spec.speedMin);
     const lenNorm = spec.len_m / this.config.zoneLengthM;
+    const gapNorm = this.config.minGapM / this.config.zoneLengthM;
 
-    // Queue position: behind the zone entry, stacked based on current queue length
-    const queueCount = side === 'A' ? this._queueA : this._queueB;
-    const queueOffset = queueCount * (lenNorm + this.config.minGapM / this.config.zoneLengthM);
-
-    const x = side === 'A'
-      ? -(this.config.queueDepthNorm + queueOffset)
-      :  (1 + this.config.queueDepthNorm + queueOffset);
-
-    const veh: SimVehicle = {
-      id: this.nextId++,
-      side,
-      type,
-      x,
-      y: (Math.random() - 0.5) * 0.02,
-      speed: 0,
-      cruiseSpeed: cruise,
-      len_m: spec.len_m,
-      emergency: type === 'emergency',
-      stuck: false,
-      inZone: false,
-    };
-
-    this.vehicles.set(veh.id, veh);
-    return veh;
+    // Find the tail of the existing queue to stack behind it
+    let tailX: number;
+    if (side === 'A') {
+      // Queue is at x < 0. Tail = lowest x among queued A vehicles
+      tailX = 0;
+      for (const v of this.vehicles.values()) {
+        if (v.side === 'A' && v.x < 0 && v.x < tailX) {
+          tailX = v.x - (v.len_m / this.config.zoneLengthM) - gapNorm;
+        }
+      }
+      // Place new vehicle behind the tail
+      const x = Math.min(tailX - lenNorm - gapNorm, -(this.config.queueDepthNorm));
+      const veh: SimVehicle = {
+        id: this.nextId++, side, type, x,
+        y: (Math.random() - 0.5) * 0.015,
+        speed: 0, cruiseSpeed: cruise, len_m: spec.len_m,
+        emergency: type === 'emergency', stuck: false, inZone: false,
+      };
+      this.vehicles.set(veh.id, veh);
+      return veh;
+    } else {
+      // Queue is at x > 1. Tail = highest x among queued B vehicles
+      tailX = 1;
+      for (const v of this.vehicles.values()) {
+        if (v.side === 'B' && v.x > 1 && v.x > tailX) {
+          tailX = v.x + (v.len_m / this.config.zoneLengthM) + gapNorm;
+        }
+      }
+      const x = Math.max(tailX + lenNorm + gapNorm, 1 + this.config.queueDepthNorm);
+      const veh: SimVehicle = {
+        id: this.nextId++, side, type, x,
+        y: (Math.random() - 0.5) * 0.015,
+        speed: 0, cruiseSpeed: cruise, len_m: spec.len_m,
+        emergency: type === 'emergency', stuck: false, inZone: false,
+      };
+      this.vehicles.set(veh.id, veh);
+      return veh;
+    }
   }
 
   private _moveVehicles(dtS: number): void {
@@ -262,53 +277,65 @@ export class DemoSimulator {
 
     const lenNorm = veh.len_m / this.config.zoneLengthM;
     const minGapNorm = this.config.minGapM / this.config.zoneLengthM;
+    const dtClamped = Math.min(dtS, 0.1);
 
     // Determine if this vehicle is allowed to enter the zone
     const canEnter = this._canEnter(veh);
 
-    // Find the vehicle immediately ahead (closer to zone center)
+    // Find the vehicle immediately ahead
     const ahead = this._findLeader(veh, siblings);
 
-    // Stopping position
-    let stopAt: number;
+    // Compute gap to stop-line and gap to leader (in normalized units)
+    let gapToStop: number;
+    let gapToLeader: number;
+
     if (veh.side === 'A') {
-      stopAt = canEnter ? 1.0 : 0.0; // stop at zone entry if red
+      // Stop at zone entry (x=0) if red, otherwise drive through to exit (x=1.05)
+      const stopLine = canEnter ? 1.05 : 0.0;
+      gapToStop = stopLine - veh.x;
+      gapToLeader = ahead ? (ahead.x - lenNorm - minGapNorm) - veh.x : Infinity;
     } else {
-      stopAt = canEnter ? 0.0 : 1.0;
+      const stopLine = canEnter ? -0.05 : 1.0;
+      gapToStop = veh.x - stopLine;
+      gapToLeader = ahead ? veh.x - (ahead.x + lenNorm + minGapNorm) : Infinity;
     }
 
-    // Compute target speed based on gap to leader or stop-line
+    // Effective gap is the minimum of both constraints
+    const gap = Math.min(gapToStop, gapToLeader);
+
+    // IDM-like target speed: smooth deceleration based on gap
+    // At gap <= 0: full stop. At gap >= comfortGap: cruise. Linear blend in between.
+    const comfortGap = lenNorm * 3 + minGapNorm * 2; // ~3 car lengths to reach cruise
     let targetSpeed: number;
-    if (veh.side === 'A') {
-      const gapToStop = stopAt - veh.x;
-      const gapToLeader = ahead ? (ahead.x - lenNorm - minGapNorm) - veh.x : Infinity;
-      const gap = Math.min(gapToStop, gapToLeader);
-      targetSpeed = gap > lenNorm + minGapNorm ? veh.cruiseSpeed : 0;
+
+    if (gap <= 0) {
+      targetSpeed = 0;
+    } else if (gap >= comfortGap) {
+      targetSpeed = veh.cruiseSpeed;
     } else {
-      const gapToStop = veh.x - stopAt;
-      const gapToLeader = ahead ? veh.x - (ahead.x + lenNorm + minGapNorm) : Infinity;
-      const gap = Math.min(gapToStop, gapToLeader);
-      targetSpeed = gap > lenNorm + minGapNorm ? veh.cruiseSpeed : 0;
+      // Smooth quadratic ramp: feels natural
+      const ratio = gap / comfortGap;
+      targetSpeed = veh.cruiseSpeed * ratio * ratio;
     }
 
-    // Emergency vehicles always move
+    // Emergency vehicles always move at cruise
     if (veh.emergency) targetSpeed = veh.cruiseSpeed;
 
-    // Smooth acceleration / deceleration
-    const accel = 3.0; // m/s²
-    const dtClamped = Math.min(dtS, 0.1);
+    // Smooth acceleration / deceleration (higher values = snappier response)
+    const accelRate = 12.0; // m/s² acceleration
+    const decelRate = 20.0; // m/s² deceleration (braking is faster)
     if (targetSpeed > veh.speed) {
-      veh.speed = Math.min(targetSpeed, veh.speed + accel * dtClamped);
+      veh.speed = Math.min(targetSpeed, veh.speed + accelRate * dtClamped);
     } else {
-      veh.speed = Math.max(0, veh.speed - accel * 2 * dtClamped);
+      veh.speed = Math.max(0, veh.speed - decelRate * dtClamped);
     }
 
-    // Move
+    // Move (speed is in m/s, normalize by zone length)
     const deltaNorm = (veh.speed * dtClamped) / this.config.zoneLengthM;
     if (veh.side === 'A') {
-      veh.x = Math.min(veh.x + deltaNorm, 1.05); // small overshoot allowed before prune
+      veh.x += deltaNorm;
     } else {
-      veh.x = Math.max(veh.x - deltaNorm, -0.05);
+      veh.x -= deltaNorm;
     }
 
     // Track zone entry for throughput / delay
