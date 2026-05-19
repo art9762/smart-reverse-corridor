@@ -73,6 +73,8 @@ export function LiveRoadView({ now }: LiveRoadViewProps) {
 
   const queueA = snapshot?.queues.A ?? corridor?.queue_A ?? 0;
   const queueB = snapshot?.queues.B ?? corridor?.queue_B ?? 0;
+  const insideA = corridor?.inside_A ?? 0;
+  const insideB = corridor?.inside_B ?? 0;
 
   // Sort by x so DOM order is left → right (matches a real-world camera feed).
   const sortedVehicles = useMemo(
@@ -175,7 +177,13 @@ export function LiveRoadView({ now }: LiveRoadViewProps) {
           />
 
           {/* shared single lane (the repair zone) */}
-          <SingleLaneZone yCenter={Y_CENTER} x1={ZONE_X} x2={ZONE_X2} phase={phase} />
+          <SingleLaneZone
+            yCenter={Y_CENTER}
+            x1={ZONE_X}
+            x2={ZONE_X2}
+            phase={phase}
+            zoneOccupied={(insideA + insideB) > 0 && phase !== 'GREEN_A' && phase !== 'GREEN_B'}
+          />
 
           {/* funnel zone→B */}
           <Funnel
@@ -355,11 +363,13 @@ function SingleLaneZone({
   x1,
   x2,
   phase,
+  zoneOccupied,
 }: {
   yCenter: number;
   x1: number;
   x2: number;
   phase: Phase;
+  zoneOccupied: boolean;
 }) {
   const top = yCenter - LANE_H_1 / 2;
   const bot = yCenter + LANE_H_1 / 2;
@@ -373,6 +383,28 @@ function SingleLaneZone({
         fill="url(#live-lane)"
         stroke="#1f2a52"
       />
+      {/* zone-not-empty warning overlay: pulses red when vehicles remain during non-green */}
+      {zoneOccupied && (
+        <rect
+          x={x1}
+          y={top}
+          width={x2 - x1}
+          height={LANE_H_1}
+          fill="#ef4444"
+          stroke="#ef4444"
+          strokeWidth={3}
+          rx={2}
+          opacity={0}
+          aria-label="zone-occupied-warning"
+        >
+          <animate
+            attributeName="opacity"
+            values="0;0.25;0"
+            dur="1s"
+            repeatCount="indefinite"
+          />
+        </rect>
+      )}
       {/* yellow-black hazard stripes along both edges */}
       <rect x={x1} y={top - 8} width={x2 - x1} height={6} fill="url(#repair-stripes)" />
       <rect x={x1} y={bot + 2} width={x2 - x1} height={6} fill="url(#repair-stripes)" />

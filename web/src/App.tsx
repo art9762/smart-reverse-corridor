@@ -11,6 +11,7 @@ import { AlertsFeed } from './components/AlertsFeed';
 import { ControlPanel } from './components/ControlPanel';
 import { CameraHealth } from './components/CameraHealth';
 import { apiBaseUrl } from './api/client';
+import { ComparisonPanel } from './components/ComparisonPanel';
 
 export default function App() {
   const ingest = useDashboard((s) => s.ingest);
@@ -85,6 +86,7 @@ export default function App() {
             <QueueChart />
             <ThroughputChart />
           </div>
+          <ComparisonPanel />
         </section>
 
         <aside className="col-span-12 xl:col-span-4 space-y-6">

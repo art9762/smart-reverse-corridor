@@ -64,9 +64,10 @@ export interface CamHeartbeat {
 }
 
 export interface OverrideCommand {
-  action: 'force_phase' | 'emergency_stop' | 'resume' | 'priority';
+  action: 'force_phase' | 'emergency_stop' | 'resume' | 'priority' | 'mode_switch';
   phase?: Phase;
   side?: Side;
+  mode?: Mode;
   reason?: string;
   by?: string;
 }
