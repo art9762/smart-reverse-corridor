@@ -1,6 +1,9 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
+
+const isDemo = process.env.VITE_DEMO === '1';
 
 export default defineConfig({
   plugins: [react()],
@@ -12,6 +15,13 @@ export default defineConfig({
   build: {
     sourcemap: true,
     target: 'es2020',
+    rollupOptions: isDemo
+      ? {
+          input: {
+            demo: resolve(__dirname, 'demo.html'),
+          },
+        }
+      : undefined,
   },
   test: {
     globals: true,
