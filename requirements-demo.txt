@@ -1,0 +1,10 @@
+# Dependencies for running ML demo scripts locally (outside Docker)
+# Install: pip install -r requirements-demo.txt
+
+ultralytics>=8.2.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+paho-mqtt>=2.0.0
+pydantic-settings>=2.0.0
+structlog>=24.0.0
+lap>=0.4.0

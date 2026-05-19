@@ -42,9 +42,16 @@ logs/
 *.log
 *.sqlite
 *.db
+results/
 
 # Docker
 .docker/
 
 # PDF
 *.pdf
+
+# Video files
+*.mp4
+*.avi
+*.mkv
+*.mov

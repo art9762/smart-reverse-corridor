@@ -100,6 +100,7 @@ services:
         condition: service_started
     volumes:
       - ./services/ml/data:/data:ro
+      - .:/video:ro
     networks: [corridor]
 
   simulator:
