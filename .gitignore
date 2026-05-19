@@ -45,3 +45,6 @@ logs/
 
 # Docker
 .docker/
+
+# PDF
+*.pdf
