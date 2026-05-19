@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Умный реверсивный коридор</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/night.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --r-background-color: #0f172a;
+  --r-main-color: #e2e8f0;
+  --r-heading-color: #f8fafc;
+  --r-link-color: #3b82f6;
+}
+.reveal { font-family: 'Inter', -apple-system, sans-serif; }
+.reveal h1, .reveal h2, .reveal h3 { font-weight: 700; text-transform: none; }
+.reveal h1 { font-size: 2.4em; }
+.reveal h2 { font-size: 1.8em; }
+.reveal h3 { font-size: 1.3em; color: #94a3b8; }
+.reveal .slides section { text-align: left; }
+.reveal .slides section.center { text-align: center; }
+.accent { color: #3b82f6; }
+.green { color: #22c55e; }
+.red { color: #ef4444; }
+.amber { color: #f59e0b; }
+.dim { color: #64748b; }
+.badge {
+  display: inline-block;
+  padding: 0.2em 0.7em;
+  border-radius: 9999px;
+  font-size: 0.6em;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.badge-blue { background: #1e40af; color: #93c5fd; }
+.badge-green { background: #166534; color: #86efac; }
+.badge-red { background: #991b1b; color: #fca5a5; }
+.badge-amber { background: #92400e; color: #fcd34d; }
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+.metric-card {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+}
+.metric-card .value {
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.metric-card .label {
+  font-size: 0.7em;
+  color: #94a3b8;
+  margin-top: 0.3em;
+}
+.metric-card .delta {
+  font-size: 0.8em;
+  font-weight: 600;
+  margin-top: 0.2em;
+}
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+.stack-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.stack-list li {
+  padding: 0.4em 0;
+  border-bottom: 1px solid #1e293b;
+  font-size: 0.85em;
+}
+.stack-list li:last-child { border-bottom: none; }
+.formula {
+  background: #1e293b;
+  border-left: 4px solid #3b82f6;
+  padding: 1em 1.5em;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75em;
+  margin: 1em 0;
+}
+.mermaid {
+  text-align: center;
+}
+.mermaid svg { max-height: 450px; }
+.emergency-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.emergency-card {
+  background: #1e293b;
+  border-radius: 10px;
+  padding: 1.2rem;
+}
+.emergency-card h4 {
+  margin: 0 0 0.5em 0;
+  font-size: 1em;
+}
+.emergency-card p {
+  margin: 0;
+  font-size: 0.7em;
+  color: #94a3b8;
+}
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  margin-top: 2rem;
+}
+.team-card {
+  background: #1e293b;
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.7em;
+}
+.reveal .slides section .fragment.visible { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- SLIDE 1: Title -->
+<section class="center" data-background-gradient="radial-gradient(circle at 30% 50%, #1e3a5f 0%, #0f172a 70%)">
+  <h1>🚦 Умный реверсивный<br>коридор</h1>
+  <h3 style="margin-top: 0.5em;">Адаптивное управление движением<br>на участке дорожного ремонта</h3>
+  <p style="margin-top: 2em; font-size: 0.7em; color: #64748b;">
+    Хакатон «Цифровая Эра Транспорта» 2026 &nbsp;•&nbsp; Команда из 5 человек
+  </p>
+</section>
+
+<!-- SLIDE 2: Problem -->
+<section>
+  <h2>😤 Проблема</h2>
+  <div class="two-col" style="margin-top: 1.5em;">
+    <div>
+      <p style="font-size: 0.85em;">Ремонт дороги → 2 полосы сужаются в одну</p>
+      <p style="font-size: 0.85em;">Сейчас: <span class="red">фиксированный таймер</span></p>
+      <ul style="font-size: 0.75em; color: #94a3b8;">
+        <li>60 сек туда, 60 обратно — всегда одинаково</li>
+        <li>Не знает, что с одной стороны пусто</li>
+        <li>Пробки до 20+ машин в очереди</li>
+        <li>Среднее ожидание ~90 секунд</li>
+        <li>Ручное регулирование = риск ДТП</li>
+      </ul>
+    </div>
+    <div style="background: #1e293b; border-radius: 12px; padding: 1.5em; text-align: center;">
+      <div style="font-size: 3em;">🚗🚗🚗🚛🚗</div>
+      <div style="font-size: 0.7em; color: #ef4444; margin-top: 0.5em;">⏱ 60 сек фиксированный таймер</div>
+      <div style="font-size: 2em; margin: 0.3em 0;">🔴───────🔴</div>
+      <div style="font-size: 0.7em; color: #94a3b8;">← пусто</div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 3: Solution -->
+<section class="center">
+  <h2>💡 Решение</h2>
+  <p style="font-size: 1.3em; margin-top: 1em;">
+    Светофор, который <span class="accent">видит</span> и <span class="green">думает</span>
+  </p>
+  <div style="margin-top: 2em; font-size: 0.8em; color: #94a3b8;">
+    <p>📷 Камеры + нейросеть считают машины</p>
+    <p>🧠 Контроллер адаптивно распределяет зелёный</p>
+    <p>🖥 Оператор видит всё в реальном времени</p>
+  </div>
+</section>
+
+<!-- SLIDE 4: Architecture -->
+<section>
+  <h2>🏗 Архитектура</h2>
+  <div class="mermaid" style="margin-top: 1em;">
+    %%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '16px'}}}%%
+    graph LR
+      subgraph Камеры
+        A_in[📷 A вход]
+        A_out[📷 A выход]
+        B_in[📷 B вход]
+        B_out[📷 B выход]
+      end
+      subgraph ML/CV
+        YOLO[YOLOv8n + ByteTrack]
+      end
+      subgraph Контроллер
+        FSM[FSM<br/>8 состояний]
+        SCHED[Адаптивный<br/>планировщик]
+      end
+      subgraph Выход
+        SIGNAL[🚦 Светофоры]
+        DASH[🖥 Дашборд]
+        GRAFANA[📊 Grafana]
+      end
+      A_in --> YOLO
+      A_out --> YOLO
+      B_in --> YOLO
+      B_out --> YOLO
+      YOLO -->|MQTT events| FSM
+      FSM --> SCHED
+      SCHED --> SIGNAL
+      FSM -->|WebSocket| DASH
+      FSM -->|InfluxDB| GRAFANA
+  </div>
+</section>
+
+<!-- SLIDE 5: Computer Vision -->
+<section>
+  <h2>👁 Компьютерное зрение</h2>
+  <div class="two-col" style="margin-top: 1em;">
+    <div>
+      <h3 style="color: #3b82f6;">YOLOv8 nano + ByteTrack</h3>
+      <ul style="font-size: 0.75em; line-height: 2;">
+        <li>Детекция: легковые, грузовики, автобусы, спецтранспорт</li>
+        <li>Трекинг: устойчивый ID каждого ТС</li>
+        <li>Виртуальная линия пересечения</li>
+        <li>Событие: <code>enter</code> / <code>exit</code> + track_id + class</li>
+        <li>30+ FPS на edge-устройстве</li>
+      </ul>
+    </div>
+    <div style="background: #1e293b; border-radius: 12px; padding: 1.5em; font-size: 0.7em;">
+      <p style="color: #64748b; margin: 0 0 0.5em;">MQTT событие:</p>
+<pre style="margin: 0; color: #e2e8f0; font-size: 0.9em;">{
+  "track_id": 42,
+  "class": "truck",
+  "side": "A",
+  "dir": "in",
+  "confidence": 0.91
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 6: FSM & Safety -->
+<section>
+  <h2>🔒 Безопасность: конечный автомат</h2>
+  <div class="mermaid" style="margin-top: 0.5em;">
+    %%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '14px'}}}%%
+    stateDiagram-v2
+      [*] --> RED_BOTH
+      RED_BOTH --> GREEN_A
+      RED_BOTH --> GREEN_B
+      GREEN_A --> YELLOW_A
+      YELLOW_A --> ALL_RED
+      ALL_RED --> GREEN_B : zone empty ✓
+      GREEN_B --> YELLOW_B
+      YELLOW_B --> ALL_RED2 : ALL_RED
+      ALL_RED2 --> GREEN_A : zone empty ✓
+      GREEN_A --> EMERGENCY : stuck/lost
+      GREEN_B --> EMERGENCY : stuck/lost
+      EMERGENCY --> RED_BOTH : resume
+  </div>
+  <div style="margin-top: 0.5em; font-size: 0.7em; background: #166534; padding: 0.8em 1.2em; border-radius: 8px; display: inline-block;">
+    ✅ Переход в GREEN только при <strong>inside_A == 0 AND inside_B == 0</strong> + страховой интервал
+  </div>
+</section>
+
+<!-- SLIDE 7: Adaptive -->
+<section>
+  <h2>🧠 Адаптивный планировщик</h2>
+  <div class="formula">
+    T_green = clamp(<br>
+    &nbsp;&nbsp;base + <span class="accent">W_queue</span> × queue_length<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="amber">W_wait</span> × wait_time_other<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="green">W_truck</span> × truck_count<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;− W_empty × other_side_empty,<br>
+    &nbsp;&nbsp;GREEN_MIN, GREEN_MAX<br>
+    )
+  </div>
+  <div style="font-size: 0.75em; margin-top: 1em;">
+    <p><span class="accent">●</span> Больше очередь → дольше зелёный</p>
+    <p><span class="amber">●</span> Другая сторона долго ждёт → сокращаем</p>
+    <p><span class="green">●</span> Грузовики медленнее → добавляем время</p>
+    <p style="color: #64748b; margin-top: 1em;">Веса настраиваются оператором на лету через дашборд</p>
+  </div>
+</section>
+
+<!-- SLIDE 8: Emergency -->
+<section>
+  <h2>🚨 Аварийные режимы</h2>
+  <div class="emergency-grid">
+    <div class="emergency-card">
+      <h4>🚑 Скорая</h4>
+      <p>Мгновенный приоритет.<br>Зелёный за <span class="green">&lt;5 секунд</span>.<br>Автоматически по классу «emergency» от CV.</p>
+    </div>
+    <div class="emergency-card">
+      <h4>🚛 Застревание</h4>
+      <p>inside &gt; 0 дольше порога → <span class="red">EMERGENCY STOP</span>.<br>Защита от drift счётчиков и реальных ЧП.</p>
+    </div>
+    <div class="emergency-card">
+      <h4>📷 Потеря камеры</h4>
+      <p>Нет heartbeat &gt;5с → алерт.<br>Обе камеры потеряны → <span class="amber">fallback на фиксированный таймер</span> (не слепой стоп).</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 9: Dashboard -->
+<section>
+  <h2>🖥 Дашборд реального времени</h2>
+  <div style="background: #1e293b; border-radius: 12px; padding: 1.5em; margin-top: 1em;">
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+      <div>
+        <p style="font-size: 0.7em; color: #64748b; margin: 0 0 0.5em;">Визуализация</p>
+        <div style="font-size: 0.8em;">
+          <p>🛣 Живая дорога с машинками (SVG, 15 FPS)</p>
+          <p>📈 Графики: очередь, throughput, delay</p>
+          <p>🟢🔴 Состояние светофоров + countdown</p>
+          <p>📷 Здоровье камер</p>
+        </div>
+      </div>
+      <div>
+        <p style="font-size: 0.7em; color: #64748b; margin: 0 0 0.5em;">Управление</p>
+        <div style="font-size: 0.8em;">
+          <p>🔄 Переключение baseline↔adaptive</p>
+          <p>🚑 Вызов приоритета</p>
+          <p>⏸ Emergency stop / resume</p>
+          <p>⚙️ Настройка весов</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p style="font-size: 0.65em; color: #64748b; margin-top: 0.8em;">React + TypeScript + Tailwind + Recharts + zustand + MQTT-over-WebSocket</p>
+</section>
+
+<!-- SLIDE 10: Benchmark -->
+<section>
+  <h2>📊 Результаты: baseline vs adaptive</h2>
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="value green">+38%</div>
+      <div class="label">Пропускная способность</div>
+      <div class="delta" style="color: #94a3b8;">42 → 58 авто / 5 мин</div>
+    </div>
+    <div class="metric-card">
+      <div class="value accent">−40%</div>
+      <div class="label">Среднее ожидание</div>
+      <div class="delta" style="color: #94a3b8;">87с → 52с</div>
+    </div>
+    <div class="metric-card">
+      <div class="value amber">−42%</div>
+      <div class="label">Макс. очередь</div>
+      <div class="delta" style="color: #94a3b8;">24 → 14 авто</div>
+    </div>
+  </div>
+  <p style="font-size: 0.7em; color: #64748b; margin-top: 1.5em; text-align: center;">
+    Бенчмарк: 6 сценариев × 5 минут каждый. Особенно заметно на асимметричном трафике (час пик с одной стороны).
+  </p>
+</section>
+
+<!-- SLIDE 11: Tech Stack -->
+<section>
+  <h2>⚙️ Технологический стек</h2>
+  <div class="two-col" style="margin-top: 1em;">
+    <div>
+      <ul class="stack-list">
+        <li>🧠 <strong>ML/CV:</strong> YOLOv8n + ByteTrack + OpenCV</li>
+        <li>🎛 <strong>Controller:</strong> Python 3.11 + FastAPI + transitions</li>
+        <li>📡 <strong>Messaging:</strong> MQTT (Mosquitto) + WebSocket</li>
+        <li>🖥 <strong>Frontend:</strong> React 18 + Vite + TypeScript + Tailwind</li>
+        <li>📊 <strong>Monitoring:</strong> InfluxDB 2 + Grafana</li>
+        <li>🐳 <strong>Infra:</strong> Docker Compose + GitHub Actions CI</li>
+        <li>🧪 <strong>Testing:</strong> pytest + vitest (58 unit tests)</li>
+      </ul>
+    </div>
+    <div style="background: #1e293b; border-radius: 12px; padding: 1.5em;">
+      <p style="font-size: 0.7em; color: #64748b; margin: 0 0 0.8em;">Запуск:</p>
+<pre style="margin: 0; font-size: 0.8em; color: #22c55e;">$ make up      # поднять стек
+$ make demo    # запустить демо
+$ make bench   # бенчмарк
+$ make test    # все тесты</pre>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 12: Demo -->
+<section class="center" data-background-gradient="radial-gradient(circle at 70% 50%, #1e3a5f 0%, #0f172a 70%)">
+  <h2>🎬 Демо</h2>
+  <p style="font-size: 1.2em; margin-top: 1em; color: #94a3b8;">Живая демонстрация системы</p>
+  <div style="margin-top: 2em; font-size: 0.8em;">
+    <p>Симулятор генерирует трафик → CV обрабатывает →</p>
+    <p>Контроллер управляет → Дашборд показывает</p>
+  </div>
+</section>
+
+<!-- SLIDE 13: What's Next -->
+<section>
+  <h2>🚀 Что дальше</h2>
+  <div style="margin-top: 1.5em; font-size: 0.85em;">
+    <p class="fragment"><span class="badge badge-blue">Edge</span> &nbsp;ONNX/TensorRT экспорт → Jetson Nano/Orin (30+ FPS)</p>
+    <p class="fragment"><span class="badge badge-green">Интеграция</span> &nbsp;Подключение к городской АСУДД (протокол STCIP)</p>
+    <p class="fragment"><span class="badge badge-amber">Масштаб</span> &nbsp;Мульти-коридор: координация нескольких участков</p>
+    <p class="fragment"><span class="badge badge-blue">ML</span> &nbsp;Автотюнинг весов через Reinforcement Learning</p>
+    <p class="fragment"><span class="badge badge-green">Данные</span> &nbsp;Предиктивная аналитика: прогноз пробок по историческим данным</p>
+  </div>
+</section>
+
+<!-- SLIDE 14: Summary -->
+<section class="center">
+  <h2>Итого</h2>
+  <div style="margin-top: 1.5em; font-size: 1em;">
+    <p><span class="green">✅</span> Безопасность гарантирована архитектурно</p>
+    <p><span class="accent">📈</span> +38% пропускной способности vs таймер</p>
+    <p><span class="amber">⚡</span> Реакция на ЧП за &lt;5 секунд</p>
+    <p><span class="green">🐳</span> Один <code>make up</code> — и всё работает</p>
+  </div>
+  <div style="margin-top: 2em;">
+    <h3 style="color: #3b82f6;">Готов к пилоту на реальном объекте</h3>
+  </div>
+</section>
+
+<!-- SLIDE 15: Q&A -->
+<section class="center" data-background-gradient="radial-gradient(circle at 50% 50%, #1e3a5f 0%, #0f172a 70%)">
+  <h2>Вопросы?</h2>
+  <p style="margin-top: 2em; font-size: 0.8em; color: #94a3b8;">Спасибо за внимание!</p>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#3b82f6',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#475569',
+      lineColor: '#64748b',
+      secondaryColor: '#1e293b',
+      tertiaryColor: '#0f172a'
+    }
+  });
+
+  Reveal.initialize({
+    hash: true,
+    transition: 'slide',
+    transitionSpeed: 'default',
+    backgroundTransition: 'fade',
+    center: false,
+    width: 1280,
+    height: 720,
+    margin: 0.08,
+    plugins: [RevealNotes]
+  }).then(() => {
+    // Render mermaid diagrams after reveal is ready
+    mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+  });
+</script>
+</body>
+</html>
