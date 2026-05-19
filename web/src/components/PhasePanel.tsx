@@ -26,7 +26,7 @@ export function PhasePanel({ now }: { now: number }) {
   const setMode = async (mode: Mode) => {
     if (state?.mode === mode) return;
     try {
-      await postOverride({ action: 'priority', reason: `mode:${mode}`, by: 'dashboard' });
+      await postOverride({ action: 'mode_switch', mode: mode, by: 'dashboard' });
     } catch {
       // The PhasePanel does not own toast UI — controller emits an alert on failure.
     }

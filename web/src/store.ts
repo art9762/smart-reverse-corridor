@@ -28,6 +28,12 @@ export interface ThroughputSeriesPoint {
   B: number;
 }
 
+export interface DelaySeriesPoint {
+  ts: number;
+  A: number;
+  B: number;
+}
+
 export interface CameraHealthSnapshot {
   id: CameraId;
   healthy: boolean;
@@ -40,6 +46,7 @@ export interface DashboardState {
   lastTick: MetricsTick | null;
   queueSeries: QueueSeriesPoint[];
   throughputSeries: ThroughputSeriesPoint[];
+  delaySeries: DelaySeriesPoint[];
   alerts: CorridorAlert[];
   recentEvents: CamEvent[];
   cameras: Record<CameraId, CameraHealthSnapshot>;
@@ -70,6 +77,7 @@ export const useDashboard = create<DashboardState>((set) => ({
   lastTick: null,
   queueSeries: [],
   throughputSeries: [],
+  delaySeries: [],
   alerts: [],
   recentEvents: [],
   cameras: emptyCameras(),
@@ -84,6 +92,7 @@ export const useDashboard = create<DashboardState>((set) => ({
       lastTick: null,
       queueSeries: [],
       throughputSeries: [],
+      delaySeries: [],
       alerts: [],
       recentEvents: [],
       cameras: emptyCameras(),
@@ -126,6 +135,11 @@ export const useDashboard = create<DashboardState>((set) => ({
           A: tick.throughput_5min.A,
           B: tick.throughput_5min.B,
         });
+        next.delaySeries = pushCapped(prev.delaySeries, {
+          ts: tick.ts,
+          A: tick.avg_delay_5min?.A ?? 0,
+          B: tick.avg_delay_5min?.B ?? 0,
+        });
       } else if (msg.topic === 'corridor/alerts') {
         const a = msg.payload;
         const id = a.id ?? `alert-${++alertCounter}-${a.ts}`;
@@ -166,6 +180,7 @@ function pushCapped<T>(arr: T[], item: T, max = MAX_METRICS_POINTS): T[] {
 
 export function phaseRemaining(state: CorridorState | null, nowSec: number): number {
   if (!state) return 0;
+  if (!Number.isFinite(state.phase_planned_end_at)) return 0;
   return Math.max(0, Math.round(state.phase_planned_end_at - nowSec));
 }
 
