@@ -11,6 +11,11 @@ import { phaseLabel, formatSeconds, formatClock } from '../lib/format';
 import { postOverride } from '../api/client';
 import type { Mode } from '../types';
 
+/** Safe integer display — returns '—' when value is not a finite number. */
+function safeInt(n: number): string {
+  return Number.isFinite(n) ? String(Math.max(0, Math.round(n))) : '—';
+}
+
 export function PhasePanel({ now }: { now: number }) {
   const state = useDashboard((s) => s.state);
   const phase = state?.phase ?? 'RED_BOTH';
@@ -22,6 +27,8 @@ export function PhasePanel({ now }: { now: number }) {
     () => Math.max(0, Math.min(1, total === 0 ? 0 : elapsed / total)),
     [elapsed, total],
   );
+
+  const zoneOccupied = (state?.inside_A ?? 0) + (state?.inside_B ?? 0) > 0;
 
   const setMode = async (mode: Mode) => {
     if (state?.mode === mode) return;
@@ -41,10 +48,29 @@ export function PhasePanel({ now }: { now: number }) {
 
   return (
     <div className="card phase-transition">
-      <div className="px-5 py-3 border-b border-bg-edge flex items-center justify-between">
+      <div className="px-5 py-3 border-b border-bg-edge flex items-center justify-between gap-3 flex-wrap">
         <div className="text-sm uppercase tracking-wider text-slate-400">Active phase</div>
-        <div className="text-xs text-slate-500">
-          mode <span className="font-mono text-slate-300">{modeLabel(state?.mode)}</span>
+        <div className="flex items-center gap-3">
+          {zoneOccupied && (
+            <span
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse"
+              role="status"
+              aria-label="Vehicles inside zone"
+            >
+              <span className="w-2 h-2 rounded-full bg-red-400" />
+              Zone not empty
+            </span>
+          )}
+          <span
+            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md border ${
+              state?.mode === 'adaptive'
+                ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                : 'bg-slate-700/50 text-slate-300 border-slate-600'
+            }`}
+            aria-label={`Current mode: ${modeLabel(state?.mode)}`}
+          >
+            {modeLabel(state?.mode)}
+          </span>
         </div>
       </div>
       <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5 items-center">
@@ -77,7 +103,7 @@ export function PhasePanel({ now }: { now: number }) {
             />
           </div>
           <div className="text-xs text-slate-500 mt-1 font-mono">
-            {elapsed}s / {total}s
+            {safeInt(elapsed)}s / {safeInt(total)}s
           </div>
         </div>
 

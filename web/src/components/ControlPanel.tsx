@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { postConfig, postOverride } from '../api/client';
-import { useDashboard } from '../store';
-import type { Phase, Side } from '../types';
+import { modeLabel, useDashboard } from '../store';
+import type { Mode, Phase, Side } from '../types';
 
 const DEFAULT_WEIGHTS = { PRIO_W_QUEUE: 1.0, PRIO_W_WAIT: 0.05, PRIO_W_TRUCK: 0.5 };
 
@@ -26,6 +26,11 @@ export function ControlPanel() {
       setTimeout(() => setFeedback(null), 3500);
     }
   };
+
+  const switchMode = (mode: Mode) =>
+    runWithLock(`mode ${mode}`, () =>
+      postOverride({ action: 'mode_switch', mode, by: 'operator' }),
+    );
 
   const ambulance = (side: Side) =>
     runWithLock(`ambulance ${side}`, () =>
@@ -58,8 +63,33 @@ export function ControlPanel() {
       <div className="p-5 space-y-5">
         <section>
           <div className="text-xs text-slate-500 uppercase tracking-widest mb-2">
-            Emergency vehicle
+            Mode
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            {(['baseline', 'adaptive'] as Mode[]).map((m) => {
+              const active = state?.mode === m;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  className={active ? 'btn-primary' : 'btn'}
+                  disabled={!!busy || active}
+                  onClick={() => switchMode(m)}
+                  aria-pressed={active}
+                  aria-label={`Switch to ${modeLabel(m)} mode`}
+                >
+                  {active && <span className="mr-1">✓</span>}
+                  {modeLabel(m)}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-slate-500 mt-2">
+            Baseline: fixed timers. Adaptive: queue · wait · truck weights.
+          </p>
+        </section>
+
+        <section>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
