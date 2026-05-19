@@ -6,7 +6,7 @@
         "datasource": { "type": "influxdb", "uid": "influxdb" },
         "enable": true,
         "iconColor": "orange",
-        "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"fsm_state\")\n  |> filter(fn: (r) => r._field == \"phase\")"
+        "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"corridor_tick\")\n  |> filter(fn: (r) => r._field == \"throughput_A\")\n  |> keep(columns: [\"_time\", \"phase\"])"
       }
     ]
   },
@@ -22,64 +22,147 @@
       "title": "Throughput (veh/min) per side",
       "datasource": { "type": "influxdb", "uid": "influxdb" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
       "targets": [
         {
           "refId": "A",
-          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"throughput\")\n  |> filter(fn: (r) => r._field == \"vpm\")\n  |> aggregateWindow(every: 10s, fn: mean, createEmpty: false)"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"corridor_tick\")\n  |> filter(fn: (r) => r._field == \"throughput_A\" or r._field == \"throughput_B\")\n  |> aggregateWindow(every: 10s, fn: last, createEmpty: false)"
         }
       ]
     },
     {
       "id": 2,
       "type": "timeseries",
-      "title": "Queue length (vehicles) per side",
+      "title": "Queue Length (vehicles) per side",
       "datasource": { "type": "influxdb", "uid": "influxdb" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
       "targets": [
         {
           "refId": "A",
-          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"queue\")\n  |> filter(fn: (r) => r._field == \"length\")"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"corridor_tick\")\n  |> filter(fn: (r) => r._field == \"queue_A\" or r._field == \"queue_B\")\n  |> aggregateWindow(every: 10s, fn: last, createEmpty: false)"
         }
       ]
     },
     {
       "id": 3,
       "type": "timeseries",
-      "title": "Average wait / delay (s)",
+      "title": "Average Delay (s) per side",
       "datasource": { "type": "influxdb", "uid": "influxdb" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
       "targets": [
         {
           "refId": "A",
-          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"delay\")\n  |> filter(fn: (r) => r._field == \"avg_s\")"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"corridor_tick\")\n  |> filter(fn: (r) => r._field == \"delay_A\" or r._field == \"delay_B\")\n  |> aggregateWindow(every: 10s, fn: last, createEmpty: false)"
         }
       ]
     },
     {
       "id": 4,
-      "type": "stat",
-      "title": "Current FSM phase",
+      "type": "timeseries",
+      "title": "Inside Count (vehicles in corridor) per side",
       "datasource": { "type": "influxdb", "uid": "influxdb" },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
       "targets": [
         {
           "refId": "A",
-          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"fsm_state\")\n  |> filter(fn: (r) => r._field == \"phase\")\n  |> last()"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"corridor_tick\")\n  |> filter(fn: (r) => r._field == \"inside_A\" or r._field == \"inside_B\")\n  |> aggregateWindow(every: 5s, fn: last, createEmpty: false)"
         }
       ]
     },
     {
       "id": 5,
       "type": "stat",
-      "title": "Active alerts (last 5m)",
+      "title": "Current Phase",
       "datasource": { "type": "influxdb", "uid": "influxdb" },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
-      "options": { "reduceOptions": { "calcs": ["sum"] } },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": { "mappings": [] },
+        "overrides": []
+      },
       "targets": [
         {
           "refId": "A",
-          "query": "from(bucket: \"corridor\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"alerts\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> sum()"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"corridor_tick\")\n  |> filter(fn: (r) => r._field == \"throughput_A\")\n  |> keep(columns: [\"_time\", \"phase\"])\n  |> rename(columns: {phase: \"_value\"})\n  |> last(column: \"_value\")"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Current Mode",
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 16 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": { "mappings": [] },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "from(bucket: \"corridor\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"corridor_tick\")\n  |> filter(fn: (r) => r._field == \"throughput_A\")\n  |> keep(columns: [\"_time\", \"mode\"])\n  |> rename(columns: {mode: \"_value\"})\n  |> last(column: \"_value\")"
         }
       ]
     }

@@ -15,7 +15,7 @@ include .env
 export
 endif
 
-.PHONY: help up up-all down restart logs ps demo bench lint lint-py lint-web test test-py test-web build clean nuke env
+.PHONY: help up up-all down restart logs ps demo demo-quick bench lint lint-py lint-web test test-py test-web build clean nuke env
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make <target>\n\nTargets:\n"} \
@@ -53,6 +53,13 @@ demo: env ## Bring up stack and run the asymmetric simulator scenario
 	@echo "  InfluxDB : http://localhost:8086"
 	@echo ""
 	$(COMPOSE) logs -f --tail=50 controller simulator
+
+demo-quick: ## Quick 60s demo (no ML)
+	docker compose up -d
+	docker compose --profile sim up -d
+	@echo "Dashboard: http://localhost:$${WEB_PORT:-5173}"
+	@echo "Grafana:   http://localhost:$${GRAFANA_PORT:-3001}"
+	@echo "Controller: http://localhost:$${CONTROLLER_PORT:-8000}/state"
 
 bench: env ## Run baseline + adaptive scenarios for $(BENCH_MIN) minutes each, save metrics under runs/
 	@mkdir -p $(RUN_DIR)
