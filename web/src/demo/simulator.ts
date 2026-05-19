@@ -282,6 +282,16 @@ export class DemoSimulator {
     // Determine if this vehicle is allowed to enter the zone
     const canEnter = this._canEnter(veh);
 
+    // If vehicle has passed through the zone exit, just drive off at cruise
+    const pastExit = (veh.side === 'A' && veh.inZone && veh.x >= 0.95) ||
+                     (veh.side === 'B' && veh.inZone && veh.x <= 0.05);
+    if (pastExit) {
+      veh.speed = veh.cruiseSpeed;
+      const deltaNorm = (veh.speed * dtClamped) / this.config.zoneLengthM;
+      if (veh.side === 'A') { veh.x += deltaNorm; } else { veh.x -= deltaNorm; }
+      return;
+    }
+
     // Find the vehicle immediately ahead
     const ahead = this._findLeader(veh, siblings);
 
@@ -290,13 +300,13 @@ export class DemoSimulator {
     let gapToLeader: number;
 
     if (veh.side === 'A') {
-      // Stop at zone entry (x=0) if red, otherwise drive through to exit (x=1.05)
-      const stopLine = canEnter ? 1.05 : 0.0;
-      gapToStop = stopLine - veh.x;
+      // Stop at zone entry (x=0) if red, otherwise no stop-line constraint
+      const stopLine = canEnter ? Infinity : 0.0;
+      gapToStop = stopLine === Infinity ? Infinity : (stopLine - veh.x);
       gapToLeader = ahead ? (ahead.x - lenNorm - minGapNorm) - veh.x : Infinity;
     } else {
-      const stopLine = canEnter ? -0.05 : 1.0;
-      gapToStop = veh.x - stopLine;
+      const stopLine = canEnter ? -Infinity : 1.0;
+      gapToStop = stopLine === -Infinity ? Infinity : (veh.x - stopLine);
       gapToLeader = ahead ? veh.x - (ahead.x + lenNorm + minGapNorm) : Infinity;
     }
 
@@ -304,8 +314,7 @@ export class DemoSimulator {
     const gap = Math.min(gapToStop, gapToLeader);
 
     // IDM-like target speed: smooth deceleration based on gap
-    // At gap <= 0: full stop. At gap >= comfortGap: cruise. Linear blend in between.
-    const comfortGap = lenNorm * 3 + minGapNorm * 2; // ~3 car lengths to reach cruise
+    const comfortGap = lenNorm * 4 + minGapNorm * 3; // comfortable following distance
     let targetSpeed: number;
 
     if (gap <= 0) {
@@ -313,7 +322,7 @@ export class DemoSimulator {
     } else if (gap >= comfortGap) {
       targetSpeed = veh.cruiseSpeed;
     } else {
-      // Smooth quadratic ramp: feels natural
+      // Smooth quadratic ramp
       const ratio = gap / comfortGap;
       targetSpeed = veh.cruiseSpeed * ratio * ratio;
     }
@@ -321,9 +330,9 @@ export class DemoSimulator {
     // Emergency vehicles always move at cruise
     if (veh.emergency) targetSpeed = veh.cruiseSpeed;
 
-    // Smooth acceleration / deceleration (higher values = snappier response)
-    const accelRate = 12.0; // m/s² acceleration
-    const decelRate = 20.0; // m/s² deceleration (braking is faster)
+    // Smooth acceleration / deceleration
+    const accelRate = 12.0;
+    const decelRate = 20.0;
     if (targetSpeed > veh.speed) {
       veh.speed = Math.min(targetSpeed, veh.speed + accelRate * dtClamped);
     } else {
@@ -386,7 +395,7 @@ export class DemoSimulator {
 
   private _pruneExited(): void {
     for (const [id, veh] of this.vehicles) {
-      const exited = veh.side === 'A' ? veh.x > 1.04 : veh.x < -0.04;
+      const exited = veh.side === 'A' ? veh.x > 1.15 : veh.x < -0.15;
       if (exited) {
         // Record throughput and delay
         if (veh.side === 'A') {
