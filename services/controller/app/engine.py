@@ -220,7 +220,24 @@ class Engine:
             self._apply_config(msg.payload)
 
     def _handle_cam_event(self, side: str, direction: str, payload: Dict[str, Any]) -> None:
-        self.counters.on_event(side, direction)
+        # `side` here is the CAMERA side (from MQTT topic), not the vehicle's
+        # travel direction. For zone occupancy we need to track by vehicle
+        # origin side:
+        #   - cam A/in  = vehicle from side A entering zone  → inside_A++
+        #   - cam B/out = vehicle from side A exiting zone   → inside_A--
+        #   - cam B/in  = vehicle from side B entering zone  → inside_B++
+        #   - cam A/out = vehicle from side B exiting zone   → inside_B--
+        #
+        # Rule: "in" events increment the CAMERA side's inside counter.
+        #       "out" events decrement the OPPOSITE side's inside counter
+        #       (because exit camera is on the opposite end from entry).
+        if direction == "in":
+            self.counters.on_event(side, "in")
+        elif direction == "out":
+            # Vehicle exits on camera side X → it entered from the opposite side
+            opposite = "B" if side.upper() == "A" else "A"
+            self.counters.on_event(opposite, "out")
+
         side_u = side.upper()
         now = time.time()
 
@@ -238,10 +255,10 @@ class Engine:
                 key = int(track_id)
                 entry = self._vehicle_entries.pop(key, None)
                 if entry is not None:
-                    _, entry_time = entry
+                    entry_side, entry_time = entry
                     delay = now - entry_time
                     if delay > 0:
-                        self._recent_delays[side_u].append(delay)
+                        self._recent_delays[entry_side].append(delay)
 
         self.storage.log_event("cam_event", {"side": side, "dir": direction, **payload})
 
