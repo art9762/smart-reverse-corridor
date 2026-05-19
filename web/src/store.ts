@@ -211,4 +211,4 @@ export const phaseColor = (p: Phase | undefined | null): string => {
 };
 
 export const modeLabel = (m: Mode | undefined): string =>
-  m === 'adaptive' ? 'Adaptive' : 'Baseline';
+  m === 'adaptive' ? 'Адаптивный' : 'Фиксированный';

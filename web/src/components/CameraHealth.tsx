@@ -8,8 +8,8 @@ export function CameraHealth() {
   return (
     <div className="card">
       <div className="px-5 py-3 border-b border-bg-edge flex items-center justify-between">
-        <div className="text-sm uppercase tracking-wider text-slate-400">Camera health</div>
-        <div className="text-[10px] text-slate-500 font-mono">heartbeat ≤ 1 s</div>
+        <div className="text-sm uppercase tracking-wider text-slate-400">Состояние камер</div>
+        <div className="text-[10px] text-slate-500 font-mono">heartbeat ≤ 1 с</div>
       </div>
       <div className="p-4 grid grid-cols-2 gap-3">
         {ALL_CAMERAS.map((id) => {
@@ -27,7 +27,7 @@ export function CameraHealth() {
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-mono text-slate-100">{id}</div>
                 <div className="text-xs text-slate-500">
-                  {c?.healthy ? 'online' : 'lost'}
+                  {c?.healthy ? 'онлайн' : 'потеряна'}
                   {c?.fps ? ` · ${formatHz(c.fps)}` : ''}
                 </div>
               </div>

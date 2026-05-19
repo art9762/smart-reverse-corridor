@@ -53,7 +53,7 @@ export default function DemoApp() {
             ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
             : 'bg-slate-700/50 text-slate-300 border-slate-600'
         }`}
-        aria-label={`Current mode: ${modeLabel(mode)}`}
+        aria-label={`Текущий режим: ${modeLabel(mode)}`}
       >
         {modeLabel(mode)}
       </span>
@@ -71,9 +71,9 @@ export default function DemoApp() {
               aria-hidden
             />
             <h1 className="text-lg font-semibold tracking-tight">
-              Smart Reverse Corridor
+              Умный реверсивный коридор
               <span className="ml-2 text-slate-400 font-normal hidden sm:inline">
-                · Demo Mode
+                · Демо-режим
               </span>
             </h1>
           </div>
@@ -84,7 +84,7 @@ export default function DemoApp() {
                 className="w-1.5 h-1.5 rounded-full bg-accent-violet animate-pulseSoft"
                 aria-hidden
               />
-              Standalone
+              Автономный
             </span>
           </div>
         </div>
@@ -131,7 +131,7 @@ export default function DemoApp() {
 
       {/* Footer */}
       <footer className="px-6 py-4 text-center text-xs text-slate-500">
-        Standalone demo · no backend required
+        Автономная демонстрация · без сервера
       </footer>
     </div>
   );

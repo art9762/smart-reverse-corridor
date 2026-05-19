@@ -18,7 +18,7 @@ export function AlertsFeed() {
   return (
     <div className="card">
       <div className="px-5 py-3 border-b border-bg-edge flex items-center justify-between">
-        <div className="text-sm uppercase tracking-wider text-slate-400">Alerts</div>
+        <div className="text-sm uppercase tracking-wider text-slate-400">Оповещения</div>
         <div className="flex items-center gap-1 text-xs">
           <button
             type="button"
@@ -26,7 +26,7 @@ export function AlertsFeed() {
             aria-pressed={filter === 'all'}
             className={`px-2 py-1 rounded ${filter === 'all' ? 'bg-bg-edge text-slate-100' : 'text-slate-400 hover:text-slate-200'}`}
           >
-            all
+            все
           </button>
           {LEVELS.map((l) => (
             <button
@@ -44,7 +44,7 @@ export function AlertsFeed() {
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              {l}
+              {l === 'emergency' ? 'авария' : l === 'warning' ? 'предупр.' : 'инфо'}
             </button>
           ))}
         </div>
@@ -52,7 +52,7 @@ export function AlertsFeed() {
       <ul className="max-h-80 overflow-y-auto divide-y divide-bg-edge">
         {filtered.length === 0 && (
           <li className="px-5 py-8 text-center text-slate-500 text-sm">
-            No active alerts.
+            Нет активных оповещений.
           </li>
         )}
         {filtered.map((a) => (
@@ -71,9 +71,9 @@ export function AlertsFeed() {
               type="button"
               onClick={() => a.id && ack(a.id)}
               className="opacity-0 group-hover:opacity-100 text-xs text-slate-400 hover:text-slate-100 transition-opacity"
-              aria-label="Dismiss alert"
+              aria-label="Скрыть оповещение"
             >
-              dismiss
+              скрыть
             </button>
           </li>
         ))}

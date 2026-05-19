@@ -34,7 +34,7 @@ function Slider({
         max={max}
         step={step}
         onChange={(e) => onChange(Number(e.target.value))}
-        aria-label={`weight ${label}`}
+        aria-label={`вес ${label}`}
       />
     </label>
   );
@@ -55,29 +55,29 @@ export function DemoControlPanel() {
 
   const switchMode = (mode: Mode) => {
     demoOrchestrator.switchMode(mode);
-    flash(`✓ mode → ${modeLabel(mode)}`);
+    flash(`✓ режим → ${modeLabel(mode)}`);
   };
 
   const ambulance = (side: Side) => {
     demoOrchestrator.triggerAmbulance(side);
-    flash(`✓ 🚑 ambulance from ${side}`);
+    flash(`✓ 🚑 скорая со стороны ${side}`);
   };
 
   const forcePhase = (phase: Phase) => {
     demoOrchestrator.forcePhase(phase);
-    flash(`✓ forced ${phase}`);
+    flash(`✓ принудительно ${phase}`);
   };
 
   const handleStop = () => {
     demoOrchestrator.emergencyStop();
     setStopped(true);
-    flash('✓ emergency stop');
+    flash('✓ аварийная остановка');
   };
 
   const handleResume = () => {
     demoOrchestrator.resume();
     setStopped(false);
-    flash('✓ resumed');
+    flash('✓ возобновлено');
   };
 
   const applySpawnRates = (a: number, b: number) => {
@@ -86,12 +86,12 @@ export function DemoControlPanel() {
 
   const applyWeights = () => {
     demoOrchestrator.setWeights(weights);
-    flash('✓ weights applied');
+    flash('✓ веса применены');
   };
 
   const injectStuck = () => {
     demoOrchestrator.triggerStuck('A');
-    flash('✓ stuck vehicle injected');
+    flash('✓ застрявшее ТС добавлено');
   };
 
   const currentMode = state?.mode;
@@ -99,13 +99,13 @@ export function DemoControlPanel() {
   return (
     <div className="card">
       <div className="px-5 py-3 border-b border-bg-edge">
-        <div className="text-sm uppercase tracking-wider text-slate-400">Demo Controls</div>
+        <div className="text-sm uppercase tracking-wider text-slate-400">Управление демо</div>
       </div>
       <div className="p-5 space-y-5">
 
         {/* Mode */}
         <section>
-          <div className="text-xs text-slate-500 uppercase tracking-widest mb-2">Mode</div>
+          <div className="text-xs text-slate-500 uppercase tracking-widest mb-2">Режим</div>
           <div className="grid grid-cols-2 gap-2">
             {(['baseline', 'adaptive'] as Mode[]).map((m) => {
               const active = currentMode === m;
@@ -117,7 +117,7 @@ export function DemoControlPanel() {
                   disabled={active}
                   onClick={() => switchMode(m)}
                   aria-pressed={active}
-                  aria-label={`Switch to ${modeLabel(m)} mode`}
+                  aria-label={`Переключить на режим: ${modeLabel(m)}`}
                 >
                   {active && <span className="mr-1">✓</span>}
                   {modeLabel(m)}
@@ -126,31 +126,31 @@ export function DemoControlPanel() {
             })}
           </div>
           <p className="text-xs text-slate-500 mt-2">
-            Baseline: fixed timers. Adaptive: queue · wait · truck weights.
+            Фиксированный: статичные таймеры. Адаптивный: веса очередь · ожидание · фура.
           </p>
         </section>
 
         {/* Ambulance */}
         <section>
           <div className="text-xs text-slate-500 uppercase tracking-widest mb-2">
-            Priority override
+            Приоритетный пропуск
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               className="btn-warn"
               onClick={() => ambulance('A')}
-              aria-label="Ambulance from side A"
+              aria-label="Скорая со стороны A"
             >
-              🚑 from A
+              🚑 со стороны A
             </button>
             <button
               type="button"
               className="btn-warn"
               onClick={() => ambulance('B')}
-              aria-label="Ambulance from side B"
+              aria-label="Скорая со стороны B"
             >
-              🚑 from B
+              🚑 со стороны B
             </button>
           </div>
         </section>
@@ -158,7 +158,7 @@ export function DemoControlPanel() {
         {/* Force phase */}
         <section>
           <div className="text-xs text-slate-500 uppercase tracking-widest mb-2">
-            Force phase
+            Принудительная фаза
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -166,21 +166,21 @@ export function DemoControlPanel() {
               className="btn-success"
               onClick={() => forcePhase('GREEN_A')}
             >
-              GREEN A
+              ЗЕЛЁНЫЙ A
             </button>
             <button
               type="button"
               className="btn-success"
               onClick={() => forcePhase('GREEN_B')}
             >
-              GREEN B
+              ЗЕЛЁНЫЙ B
             </button>
           </div>
         </section>
 
         {/* Emergency stop / resume */}
         <section>
-          <div className="text-xs text-slate-500 uppercase tracking-widest mb-2">System</div>
+          <div className="text-xs text-slate-500 uppercase tracking-widest mb-2">Система</div>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -188,7 +188,7 @@ export function DemoControlPanel() {
               disabled={stopped}
               onClick={handleStop}
             >
-              ⏸ Stop
+              ⏸ Аварийная остановка
             </button>
             <button
               type="button"
@@ -196,22 +196,22 @@ export function DemoControlPanel() {
               disabled={!stopped}
               onClick={handleResume}
             >
-              ▶ Resume
+              ▶ Возобновить
             </button>
           </div>
           <p className="text-xs text-slate-500 mt-2">
-            Stop forces ALL_RED and freezes the FSM until Resume.
+            Остановка включает ALL_RED и замораживает автомат до нажатия «Возобновить».
           </p>
         </section>
 
         {/* Spawn rates */}
         <section>
           <div className="text-xs text-slate-500 uppercase tracking-widest mb-2">
-            Spawn rates
+            Интенсивность потока
           </div>
           <div className="space-y-3">
             <Slider
-              label="Side A (veh/s)"
+              label="Сторона A (авт/с)"
               value={spawnA}
               onChange={(v) => {
                 setSpawnA(v);
@@ -222,7 +222,7 @@ export function DemoControlPanel() {
               step={0.1}
             />
             <Slider
-              label="Side B (veh/s)"
+              label="Сторона B (авт/с)"
               value={spawnB}
               onChange={(v) => {
                 setSpawnB(v);
@@ -239,15 +239,15 @@ export function DemoControlPanel() {
         <section>
           <div className="flex items-center justify-between">
             <div className="text-xs text-slate-500 uppercase tracking-widest">
-              Adaptive weights
+              Веса адаптивного алгоритма
             </div>
             <span className="text-[10px] text-slate-500">
-              mode: {currentMode ?? '—'}
+              режим: {currentMode ?? '—'}
             </span>
           </div>
           <div className="space-y-3 mt-2">
             <Slider
-              label="queue"
+              label="очередь"
               value={weights.prioWQueue}
               onChange={(v) => setWeights((w) => ({ ...w, prioWQueue: v }))}
               min={0}
@@ -255,7 +255,7 @@ export function DemoControlPanel() {
               step={0.05}
             />
             <Slider
-              label="wait"
+              label="ожидание"
               value={weights.prioWWait}
               onChange={(v) => setWeights((w) => ({ ...w, prioWWait: v }))}
               min={0}
@@ -263,7 +263,7 @@ export function DemoControlPanel() {
               step={0.005}
             />
             <Slider
-              label="truck"
+              label="фура"
               value={weights.prioWTruck}
               onChange={(v) => setWeights((w) => ({ ...w, prioWTruck: v }))}
               min={0}
@@ -277,14 +277,14 @@ export function DemoControlPanel() {
               className="btn-primary"
               onClick={applyWeights}
             >
-              Apply
+              Применить
             </button>
             <button
               type="button"
               className="btn"
               onClick={() => setWeights(DEFAULT_WEIGHTS)}
             >
-              Reset
+              Сброс
             </button>
           </div>
         </section>
@@ -295,9 +295,9 @@ export function DemoControlPanel() {
             type="button"
             className="btn w-full justify-center border-dashed border-slate-600 hover:border-accent-yellow/50 hover:text-yellow-200"
             onClick={injectStuck}
-            aria-label="Inject a stuck vehicle into the zone"
+            aria-label="Добавить застрявшее ТС в зону"
           >
-            🚧 Inject stuck vehicle
+            🚧 Застрявшее ТС
           </button>
         </section>
 

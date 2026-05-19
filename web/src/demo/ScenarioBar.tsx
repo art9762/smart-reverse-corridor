@@ -49,11 +49,11 @@ export function ScenarioBar({
         flex flex-wrap items-center gap-3
       "
       role="region"
-      aria-label="Demo scenarios"
+      aria-label="Сценарии демо"
     >
       {/* Label */}
       <span className="text-xs uppercase tracking-widest text-slate-500 shrink-0">
-        Scenarios
+        Сценарии
       </span>
 
       {/* Scenario cards */}
@@ -112,16 +112,16 @@ export function ScenarioBar({
           </div>
         )}
         {!isRunning && (
-          <span className="text-xs text-slate-600 italic">no scenario running</span>
+          <span className="text-xs text-slate-600 italic">нет активного сценария</span>
         )}
         <button
           type="button"
           onClick={onStop}
           disabled={!isRunning}
           className="btn-danger text-xs px-3 py-1.5 disabled:opacity-30"
-          aria-label="Stop current scenario"
+          aria-label="Остановить текущий сценарий"
         >
-          ⏹ Stop
+          ⏹ Стоп
         </button>
       </div>
     </div>

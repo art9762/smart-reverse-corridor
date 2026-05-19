@@ -27,10 +27,16 @@ export const formatHz = (n: number): string => `${formatNumber(n, { maximumFract
 export const clamp = (v: number, lo: number, hi: number): number =>
   Math.max(lo, Math.min(hi, v));
 
-export const phaseLabel = (p: string): string =>
-  p
-    .replace(/_/g, ' ')
-    .toLowerCase()
-    .replace(/\b\w/g, (c: string) => c.toUpperCase());
+export const phaseLabel = (p: string): string => {
+  const labels: Record<string, string> = {
+    GREEN_A: 'Зелёный A',
+    GREEN_B: 'Зелёный B',
+    YELLOW_A: 'Жёлтый A',
+    YELLOW_B: 'Жёлтый B',
+    RED_BOTH: 'Красный (обе)',
+    ALL_RED: 'Все красные',
+  };
+  return labels[p] ?? p;
+};
 
 export const nowSeconds = (): number => Date.now() / 1000;

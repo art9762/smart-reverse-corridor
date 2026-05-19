@@ -31,7 +31,7 @@ export function DelayChart() {
   return (
     <div className="card">
       <div className="px-5 py-3 border-b border-bg-edge flex items-center justify-between">
-        <div className="text-sm uppercase tracking-wider text-slate-400">Avg delay (s)</div>
+        <div className="text-sm uppercase tracking-wider text-slate-400">Ср. задержка (с)</div>
         <div className="flex items-center gap-3 text-xs">
           <Legend color="#f97316" label="A" />
           <Legend color="#e879f9" label="B" />

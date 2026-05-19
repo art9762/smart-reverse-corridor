@@ -112,12 +112,12 @@ export function LiveRoadView({ now }: LiveRoadViewProps) {
     <div className="card overflow-hidden relative">
       <div className="px-5 py-3 border-b border-bg-edge flex items-center justify-between">
         <div className="text-sm uppercase tracking-wider text-slate-400">
-          Live corridor (sim) · single-lane reverse zone
+          Коридор (симуляция) · однополосная реверсивная зона
         </div>
         <div className="text-xs text-slate-500 font-mono">
           {snapshot
-            ? `${vehicles.length} veh · zone ${zoneLengthM}m · ${snapshot.ts.toFixed(1)}s`
-            : 'no snapshot'}
+            ? `${vehicles.length} ТС · зона ${zoneLengthM}м · ${snapshot.ts.toFixed(1)}с`
+            : 'нет данных'}
         </div>
       </div>
 
@@ -126,7 +126,7 @@ export function LiveRoadView({ now }: LiveRoadViewProps) {
           viewBox={`0 0 ${W} ${H}`}
           className="w-full h-auto rounded-xl bg-gradient-to-b from-slate-950 to-slate-900 ring-1 ring-bg-edge"
           role="img"
-          aria-label={`Live corridor view, phase ${phase}, ${vehicles.length} vehicles`}
+          aria-label={`Коридор, фаза ${phase}, ${vehicles.length} ТС`}
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
@@ -271,7 +271,7 @@ export function LiveRoadView({ now }: LiveRoadViewProps) {
           >
             <div className="text-center">
               <div className="text-slate-300 text-base font-medium">
-                Waiting for simulator…
+                Ожидание симулятора…
               </div>
               <div className="text-slate-500 text-xs font-mono mt-1">
                 topic: corridor/sim/world
@@ -300,8 +300,9 @@ function Approach2Lane({
   align: 'left' | 'right';
 }) {
   const top = yCenter - LANE_H_2 / 2;
+  const sideLabel = label === 'Side A' ? 'Сторона A' : 'Сторона B';
   return (
-    <g aria-label={`approach ${label}`}>
+    <g aria-label={`подъезд ${sideLabel}`}>
       <rect
         x={x1}
         y={top}
@@ -332,7 +333,7 @@ function Approach2Lane({
         fill="#94a3b8"
         textAnchor={align === 'left' ? 'start' : 'end'}
       >
-        {label}
+        {sideLabel}
       </text>
     </g>
   );
@@ -363,7 +364,7 @@ function Funnel({
       ? `M ${x1} ${wideTop} L ${x2} ${narrowTop} L ${x2} ${narrowBot} L ${x1} ${wideBot} Z`
       : `M ${x1} ${narrowTop} L ${x2} ${wideTop} L ${x2} ${wideBot} L ${x1} ${narrowBot} Z`;
   return (
-    <g aria-label="merge funnel">
+    <g aria-label="воронка слияния">
       <path d={path} fill="url(#live-lane)" stroke="#1f2a52" />
       {/* hint that 2 lanes merged into 1 */}
       <line
@@ -406,7 +407,7 @@ function SingleLaneZone({
   const top = yCenter - LANE_H_1 / 2;
   const bot = yCenter + LANE_H_1 / 2;
   return (
-    <g aria-label="repair zone">
+    <g aria-label="ремонтная зона">
       {/* Darker zone background to visually distinguish repair area */}
       <rect
         x={x1}
@@ -433,7 +434,7 @@ function SingleLaneZone({
           strokeWidth={3}
           rx={2}
           opacity={0}
-          aria-label="zone-occupied-warning"
+          aria-label="предупреждение-зона-занята"
         >
           <animate
             attributeName="opacity"
@@ -459,7 +460,7 @@ function SingleLaneZone({
       />
 
       {/* repair sign */}
-      <g transform={`translate(${(x1 + x2) / 2 - 18}, ${top - 38})`} aria-label="repair-sign">
+      <g transform={`translate(${(x1 + x2) / 2 - 18}, ${top - 38})`} aria-label="знак-ремонт">
         <polygon points="18,0 36,28 0,28" fill="#facc15" stroke="#0f172a" strokeWidth={1.5} />
         <text
           x={18}
@@ -481,7 +482,7 @@ function SingleLaneZone({
         fontFamily="monospace"
         fill="#facc15"
       >
-        REPAIR · ONE LANE · REVERSIBLE
+        РЕМОНТ · ОДНА ПОЛОСА · РЕВЕРС
       </text>
 
       {/* directional arrow showing current phase direction */}
@@ -513,7 +514,7 @@ function ZoneFlowArrow({
         fill="#94a3b8"
         opacity={0.7}
       >
-        — paused —
+        — пауза —
       </text>
     );
   }
@@ -679,7 +680,7 @@ function Signal({
   return (
     <g
       transform={`translate(${x - 22}, ${y})`}
-      aria-label={`Signal ${side}`}
+      aria-label={`Сигнал ${side}`}
       data-testid={`live-signal-${side}`}
     >
       {/* pole */}
@@ -744,7 +745,7 @@ function QueueBadge({
 }) {
   const color = count > 12 ? '#ef4444' : count > 6 ? '#eab308' : '#22c55e';
   return (
-    <g transform={`translate(${x}, ${y})`} aria-label={`Queue ${side}`}>
+    <g transform={`translate(${x}, ${y})`} aria-label={`Очередь ${side}`}>
       <rect
         x={-26}
         y={-12}

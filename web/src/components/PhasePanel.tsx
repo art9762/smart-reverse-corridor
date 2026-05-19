@@ -76,7 +76,7 @@ function CircularCountdown({
         >
           {formatSeconds(remaining)}
         </span>
-        <span className="text-xs text-slate-500 uppercase tracking-wider mt-0.5">left</span>
+        <span className="text-xs text-slate-500 uppercase tracking-wider mt-0.5">осталось</span>
       </div>
     </div>
   );
@@ -115,16 +115,16 @@ export function PhasePanel({ now }: { now: number }) {
   return (
     <div className="card phase-transition">
       <div className="px-5 py-3 border-b border-bg-edge flex items-center justify-between gap-3 flex-wrap">
-        <div className="text-sm uppercase tracking-wider text-slate-400">Active phase</div>
+        <div className="text-sm uppercase tracking-wider text-slate-400">Активная фаза</div>
         <div className="flex items-center gap-3">
           {zoneOccupied && (
             <span
               className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse"
               role="status"
-              aria-label="Vehicles inside zone"
+              aria-label="ТС в зоне"
             >
               <span className="w-2 h-2 rounded-full bg-red-400" />
-              Zone not empty
+              Зона не пуста
             </span>
           )}
           <span
@@ -133,7 +133,7 @@ export function PhasePanel({ now }: { now: number }) {
                 ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                 : 'bg-slate-700/50 text-slate-300 border-slate-600'
             }`}
-            aria-label={`Current mode: ${modeLabel(state?.mode)}`}
+            aria-label={`Текущий режим: ${modeLabel(state?.mode)}`}
           >
             {modeLabel(state?.mode)}
           </span>
@@ -144,15 +144,15 @@ export function PhasePanel({ now }: { now: number }) {
           className={`rounded-2xl border-2 p-5 phase-transition ${colorClass[color]}`}
           aria-live="polite"
         >
-          <div className="text-xs uppercase tracking-widest opacity-80">Phase</div>
+          <div className="text-xs uppercase tracking-widest opacity-80">Фаза</div>
           <div className="text-3xl md:text-4xl font-bold mt-1 font-mono">{phaseLabel(phase)}</div>
           <div className="text-sm mt-2 opacity-80">
-            since {formatClock(state?.phase_started_at ?? 0)}
+            с {formatClock(state?.phase_started_at ?? 0)}
           </div>
         </div>
 
         <div className="flex flex-col items-center gap-3">
-          <div className="text-xs uppercase tracking-widest text-slate-500 self-start">Countdown</div>
+          <div className="text-xs uppercase tracking-widest text-slate-500 self-start">Обратный отсчёт</div>
           <CircularCountdown
             progress={progress}
             remaining={remaining}
@@ -164,8 +164,8 @@ export function PhasePanel({ now }: { now: number }) {
         </div>
 
         <div>
-          <div className="text-xs uppercase tracking-widest text-slate-500">Mode</div>
-          <div role="group" aria-label="Mode toggle" className="mt-2 inline-flex rounded-lg overflow-hidden border border-bg-edge">
+          <div className="text-xs uppercase tracking-widest text-slate-500">Режим</div>
+          <div role="group" aria-label="Переключение режима" className="mt-2 inline-flex rounded-lg overflow-hidden border border-bg-edge">
             {(['baseline', 'adaptive'] as Mode[]).map((m) => {
               const active = state?.mode === m;
               return (
@@ -186,7 +186,7 @@ export function PhasePanel({ now }: { now: number }) {
             })}
           </div>
           <p className="text-xs text-slate-500 mt-3 leading-relaxed">
-            Baseline holds fixed timers. Adaptive uses queue · wait · truck weights.
+            Фиксированный: статичные таймеры. Адаптивный: веса очередь · ожидание · фура.
           </p>
         </div>
       </div>

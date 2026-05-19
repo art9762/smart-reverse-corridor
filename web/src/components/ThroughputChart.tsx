@@ -32,7 +32,7 @@ export function ThroughputChart() {
   return (
     <div className="card">
       <div className="px-5 py-3 border-b border-bg-edge flex items-center justify-between">
-        <div className="text-sm uppercase tracking-wider text-slate-400">Throughput (vph)</div>
+        <div className="text-sm uppercase tracking-wider text-slate-400">Пропускная способность (авт/ч)</div>
         <div className="flex items-center gap-3 text-xs">
           <Legend color="#22c55e" label="A" />
           <Legend color="#a78bfa" label="B" />

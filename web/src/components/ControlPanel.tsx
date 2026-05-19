@@ -58,12 +58,12 @@ export function ControlPanel() {
   return (
     <div className="card">
       <div className="px-5 py-3 border-b border-bg-edge">
-        <div className="text-sm uppercase tracking-wider text-slate-400">Control panel</div>
+        <div className="text-sm uppercase tracking-wider text-slate-400">Панель управления</div>
       </div>
       <div className="p-5 space-y-5">
         <section>
           <div className="text-xs text-slate-500 uppercase tracking-widest mb-2">
-            Mode
+            Режим
           </div>
           <div className="grid grid-cols-2 gap-2">
             {(['baseline', 'adaptive'] as Mode[]).map((m) => {
@@ -76,7 +76,7 @@ export function ControlPanel() {
                   disabled={!!busy || active}
                   onClick={() => switchMode(m)}
                   aria-pressed={active}
-                  aria-label={`Switch to ${modeLabel(m)} mode`}
+                  aria-label={`Переключить на режим: ${modeLabel(m)}`}
                 >
                   {active && <span className="mr-1">✓</span>}
                   {modeLabel(m)}
@@ -85,7 +85,7 @@ export function ControlPanel() {
             })}
           </div>
           <p className="text-xs text-slate-500 mt-2">
-            Baseline: fixed timers. Adaptive: queue · wait · truck weights.
+            Фиксированный: статичные таймеры. Адаптивный: веса очередь · ожидание · фура.
           </p>
         </section>
 
@@ -96,25 +96,25 @@ export function ControlPanel() {
               className="btn-warn"
               disabled={!!busy}
               onClick={() => ambulance('A')}
-              aria-label="Ambulance from side A"
+              aria-label="Скорая со стороны A"
             >
-              🚑 from A
+              🚑 со стороны A
             </button>
             <button
               type="button"
               className="btn-warn"
               disabled={!!busy}
               onClick={() => ambulance('B')}
-              aria-label="Ambulance from side B"
+              aria-label="Скорая со стороны B"
             >
-              🚑 from B
+              🚑 со стороны B
             </button>
           </div>
         </section>
 
         <section>
           <div className="text-xs text-slate-500 uppercase tracking-widest mb-2">
-            Force phase
+            Принудительная фаза
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -123,7 +123,7 @@ export function ControlPanel() {
               disabled={!!busy}
               onClick={() => forcePhase('GREEN_A')}
             >
-              GREEN A
+              ЗЕЛЁНЫЙ A
             </button>
             <button
               type="button"
@@ -131,14 +131,14 @@ export function ControlPanel() {
               disabled={!!busy}
               onClick={() => forcePhase('GREEN_B')}
             >
-              GREEN B
+              ЗЕЛЁНЫЙ B
             </button>
           </div>
         </section>
 
         <section>
           <div className="text-xs text-slate-500 uppercase tracking-widest mb-2">
-            System
+            Система
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -147,7 +147,7 @@ export function ControlPanel() {
               disabled={!!busy || stopped}
               onClick={() => emergency('emergency_stop')}
             >
-              ⏸ Stop
+              ⏸ Аварийная остановка
             </button>
             <button
               type="button"
@@ -155,26 +155,26 @@ export function ControlPanel() {
               disabled={!!busy || !stopped}
               onClick={() => emergency('resume')}
             >
-              ▶ Resume
+              ▶ Возобновить
             </button>
           </div>
           <p className="text-xs text-slate-500 mt-2">
-            Stop forces ALL_RED and freezes the FSM until Resume.
+            Остановка включает ALL_RED и замораживает автомат до нажатия «Возобновить».
           </p>
         </section>
 
         <section>
           <div className="flex items-center justify-between">
             <div className="text-xs text-slate-500 uppercase tracking-widest">
-              Adaptive weights
+              Веса адаптивного алгоритма
             </div>
             <span className="text-[10px] text-slate-500">
-              mode: {state?.mode ?? '—'}
+              режим: {state?.mode ?? '—'}
             </span>
           </div>
           <div className="space-y-3 mt-2">
             <Slider
-              label="queue"
+              label="очередь"
               value={weights.PRIO_W_QUEUE}
               onChange={(v) => setWeights((w) => ({ ...w, PRIO_W_QUEUE: v }))}
               min={0}
@@ -182,7 +182,7 @@ export function ControlPanel() {
               step={0.05}
             />
             <Slider
-              label="wait"
+              label="ожидание"
               value={weights.PRIO_W_WAIT}
               onChange={(v) => setWeights((w) => ({ ...w, PRIO_W_WAIT: v }))}
               min={0}
@@ -190,7 +190,7 @@ export function ControlPanel() {
               step={0.005}
             />
             <Slider
-              label="truck"
+              label="фура"
               value={weights.PRIO_W_TRUCK}
               onChange={(v) => setWeights((w) => ({ ...w, PRIO_W_TRUCK: v }))}
               min={0}
@@ -200,7 +200,7 @@ export function ControlPanel() {
           </div>
           <div className="flex items-center gap-2 mt-3">
             <button type="button" className="btn-primary" disabled={!!busy} onClick={applyWeights}>
-              Apply
+              Применить
             </button>
             <button
               type="button"
@@ -208,7 +208,7 @@ export function ControlPanel() {
               onClick={() => setWeights(DEFAULT_WEIGHTS)}
               disabled={!!busy}
             >
-              Reset
+              Сброс
             </button>
           </div>
         </section>
@@ -252,7 +252,7 @@ function Slider({
         max={max}
         step={step}
         onChange={(e) => onChange(Number(e.target.value))}
-        aria-label={`weight ${label}`}
+        aria-label={`вес ${label}`}
       />
     </label>
   );

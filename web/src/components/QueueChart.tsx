@@ -27,7 +27,7 @@ export function QueueChart() {
   return (
     <div className="card">
       <div className="px-5 py-3 border-b border-bg-edge flex items-center justify-between">
-        <div className="text-sm uppercase tracking-wider text-slate-400">Queue length</div>
+        <div className="text-sm uppercase tracking-wider text-slate-400">Длина очереди</div>
         <div className="flex items-center gap-3 text-xs">
           <Legend color="#22c55e" label="A" />
           <Legend color="#60a5fa" label="B" />

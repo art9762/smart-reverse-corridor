@@ -201,6 +201,10 @@ export class DemoSimulator {
     const intervalA = 1 / Math.max(0.01, this.config.spawnRateA);
     const intervalB = 1 / Math.max(0.01, this.config.spawnRateB);
 
+    // Cap max vehicles to prevent runaway accumulation
+    const maxVehicles = 120;
+    if (this.vehicles.size >= maxVehicles) return;
+
     if (this.simTimeS - this.lastSpawnA >= intervalA) {
       this.lastSpawnA = this.simTimeS;
       this._spawnVehicle('A');
@@ -314,29 +318,40 @@ export class DemoSimulator {
       return;
     }
 
-    // Find the vehicle immediately ahead
+    // Find the vehicle immediately ahead (same side)
     const ahead = this._findLeader(veh, siblings);
+
+    // Also check for oncoming vehicles in the zone (collision avoidance)
+    const oncoming = this._findOncoming(veh);
 
     // Compute gap to stop-line and gap to leader (in normalized units)
     let gapToStop: number;
     let gapToLeader: number;
 
     if (veh.side === 'A') {
-      // Stop at zone entry (x=0) if red, otherwise no stop-line constraint
       const stopLine = canEnter ? Infinity : 0.0;
       gapToStop = stopLine === Infinity ? Infinity : (stopLine - veh.x);
       gapToLeader = ahead ? (ahead.x - lenNorm - minGapNorm) - veh.x : Infinity;
+      // Oncoming: treat as obstacle if in the zone ahead of us
+      if (oncoming !== null) {
+        const gapToOncoming = (oncoming.x - lenNorm - minGapNorm * 2) - veh.x;
+        gapToLeader = Math.min(gapToLeader, gapToOncoming);
+      }
     } else {
       const stopLine = canEnter ? -Infinity : 1.0;
       gapToStop = stopLine === -Infinity ? Infinity : (veh.x - stopLine);
       gapToLeader = ahead ? veh.x - (ahead.x + lenNorm + minGapNorm) : Infinity;
+      if (oncoming !== null) {
+        const gapToOncoming = veh.x - (oncoming.x + lenNorm + minGapNorm * 2);
+        gapToLeader = Math.min(gapToLeader, gapToOncoming);
+      }
     }
 
     // Effective gap is the minimum of both constraints
     const gap = Math.min(gapToStop, gapToLeader);
 
     // IDM-like target speed: smooth deceleration based on gap
-    const comfortGap = lenNorm * 4 + minGapNorm * 3; // comfortable following distance
+    const comfortGap = lenNorm * 4 + minGapNorm * 3;
     let targetSpeed: number;
 
     if (gap <= 0) {
@@ -344,27 +359,30 @@ export class DemoSimulator {
     } else if (gap >= comfortGap) {
       targetSpeed = veh.cruiseSpeed;
     } else {
-      // Smooth quadratic ramp
       const ratio = gap / comfortGap;
       targetSpeed = veh.cruiseSpeed * ratio * ratio;
     }
 
-    // Emergency vehicles ignore stop-line but still respect gap to leader
+    // Emergency vehicles ignore stop-line but still respect gap to leader/oncoming
     if (veh.emergency) {
-      // Only override stop-line constraint, keep leader gap
-      if (gapToLeader <= 0) {
+      const effectiveGap = Math.min(gapToLeader, Infinity);
+      if (effectiveGap <= 0) {
         targetSpeed = 0;
-      } else if (gapToLeader >= comfortGap) {
+      } else if (effectiveGap >= comfortGap) {
         targetSpeed = veh.cruiseSpeed;
       } else {
-        const ratio = gapToLeader / comfortGap;
+        const ratio = effectiveGap / comfortGap;
         targetSpeed = veh.cruiseSpeed * ratio * ratio;
       }
     }
 
-    // Vehicles yielding to emergency behind them: boost speed to clear the way
+    // Vehicles yielding to emergency behind them: boost speed but NOT past stop-line
     if ((veh as SimVehicle & { _yieldEmergency?: boolean })._yieldEmergency && !veh.emergency) {
-      targetSpeed = Math.max(targetSpeed, veh.cruiseSpeed * 1.3);
+      if (canEnter) {
+        // Can enter zone — speed up to clear
+        targetSpeed = Math.max(targetSpeed, veh.cruiseSpeed * 1.3);
+      }
+      // If can't enter (red), don't override — stay at stop-line
     }
 
     // Smooth acceleration / deceleration
@@ -407,8 +425,6 @@ export class DemoSimulator {
   private _findLeader(veh: SimVehicle, siblings: SimVehicle[]): SimVehicle | null {
     // Leader: same side, closer to the destination end
     if (veh.side === 'A') {
-      // Travelling left→right (x increasing). Leader is the one with higher x among vehicles
-      // that are ahead of this one.
       let closest: SimVehicle | null = null;
       for (const other of siblings) {
         if (other.id === veh.id) continue;
@@ -418,7 +434,6 @@ export class DemoSimulator {
       }
       return closest;
     } else {
-      // Travelling right→left (x decreasing). Leader has lower x.
       let closest: SimVehicle | null = null;
       for (const other of siblings) {
         if (other.id === veh.id) continue;
@@ -428,6 +443,35 @@ export class DemoSimulator {
       }
       return closest;
     }
+  }
+
+  /**
+   * Find the nearest oncoming vehicle in the zone.
+   * Only relevant when both sides have vehicles inside (shouldn't happen
+   * with correct FSM, but protects against edge cases and emergency vehicles).
+   */
+  private _findOncoming(veh: SimVehicle): SimVehicle | null {
+    // Only check within the zone [0..1]
+    if (veh.x < -0.01 || veh.x > 1.01) return null;
+
+    let closest: SimVehicle | null = null;
+    let closestDist = Infinity;
+
+    for (const other of this.vehicles.values()) {
+      if (other.id === veh.id || other.side === veh.side) continue;
+      // Only consider vehicles in the zone
+      if (other.x < 0 || other.x > 1) continue;
+
+      // Is this oncoming vehicle ahead of us?
+      if (veh.side === 'A' && other.x > veh.x) {
+        const dist = other.x - veh.x;
+        if (dist < closestDist) { closestDist = dist; closest = other; }
+      } else if (veh.side === 'B' && other.x < veh.x) {
+        const dist = veh.x - other.x;
+        if (dist < closestDist) { closestDist = dist; closest = other; }
+      }
+    }
+    return closest;
   }
 
   private _pruneExited(): void {

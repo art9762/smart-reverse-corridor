@@ -50,15 +50,15 @@ export interface ScenarioInfo {
  */
 const symmetric: Scenario = {
   name: 'symmetric',
-  label: 'Symmetric Flow',
-  description: 'Equal traffic on both sides (1.0 veh/s each). Shows adaptive vs baseline with balanced demand.',
+  label: 'Симметричный поток',
+  description: 'Равный трафик с обеих сторон (1.0 авт/с). Сравнение адаптивного и фиксированного режимов.',
   duration: 60,
   initialMode: 'adaptive',
   initialRates: { A: 1.0, B: 1.0 },
   events: [
     {
       at: 30,
-      label: 'Switch to baseline',
+      label: 'Переключение на фиксированный',
       action: (o) => o.switchMode('baseline'),
     },
   ],
@@ -70,15 +70,15 @@ const symmetric: Scenario = {
  */
 const asymmetric_peak: Scenario = {
   name: 'asymmetric_peak',
-  label: 'Asymmetric Peak',
-  description: 'Heavy A-side traffic (2.0 veh/s) vs light B-side (0.3 veh/s). Adaptive scheduler extends GREEN_A.',
+  label: 'Асимметричный час пик',
+  description: 'Тяжёлый поток со стороны A (2.0 авт/с) vs лёгкий B (0.3 авт/с). Адаптивный удлиняет GREEN_A.',
   duration: 90,
   initialMode: 'adaptive',
   initialRates: { A: 2.0, B: 0.3 },
   events: [
     {
       at: 45,
-      label: 'Equalise flow',
+      label: 'Выравнивание потока',
       action: (o) => o.setSpawnRates(1.0, 1.0),
     },
   ],
@@ -89,25 +89,25 @@ const asymmetric_peak: Scenario = {
  */
 const truck_jam: Scenario = {
   name: 'truck_jam',
-  label: 'Truck Jam',
-  description: 'Normal flow. At t=20 s a truck gets stuck in the zone from side A, blocking the corridor.',
+  label: 'Застрявшая фура',
+  description: 'Обычный поток. На t=20с фура застревает в зоне со стороны A, блокируя коридор.',
   duration: 90,
   initialMode: 'adaptive',
   initialRates: { A: 0.6, B: 0.6 },
   events: [
     {
       at: 20,
-      label: 'Inject stuck truck (A)',
+      label: 'Застрявшая фура (A)',
       action: (o) => o.triggerStuck('A'),
     },
     {
       at: 55,
-      label: 'Emergency stop',
+      label: 'Аварийная остановка',
       action: (o) => o.emergencyStop(),
     },
     {
       at: 65,
-      label: 'Resume',
+      label: 'Возобновление',
       action: (o) => o.resume(),
     },
   ],
@@ -118,20 +118,20 @@ const truck_jam: Scenario = {
  */
 const ambulance: Scenario = {
   name: 'ambulance',
-  label: 'Ambulance Priority',
-  description: 'Normal flow. At t=15 s an ambulance enters from side B — it bypasses the red light.',
+  label: 'Приоритет скорой',
+  description: 'Обычный поток. На t=15с скорая въезжает со стороны B — проезжает на красный.',
   duration: 60,
   initialMode: 'adaptive',
   initialRates: { A: 0.5, B: 0.5 },
   events: [
     {
       at: 15,
-      label: 'Ambulance from B',
+      label: 'Скорая со стороны B',
       action: (o) => o.triggerAmbulance('B'),
     },
     {
       at: 35,
-      label: 'Ambulance from A',
+      label: 'Скорая со стороны A',
       action: (o) => o.triggerAmbulance('A'),
     },
   ],
@@ -143,15 +143,15 @@ const ambulance: Scenario = {
  */
 const camera_lost: Scenario = {
   name: 'camera_lost',
-  label: 'Camera Failure',
-  description: 'Normal flow. At t=25 s a camera failure alert is raised (visual only in demo mode).',
+  label: 'Отказ камеры',
+  description: 'Обычный поток. На t=25с срабатывает оповещение об отказе камеры (визуально в демо).',
   duration: 60,
   initialMode: 'adaptive',
   initialRates: { A: 0.5, B: 0.5 },
   events: [
     {
       at: 25,
-      label: 'Camera A_in lost',
+      label: 'Камера A_in потеряна',
       action: () => {
         useDashboard.getState().ingest({
           topic: 'corridor/alerts',
@@ -166,7 +166,7 @@ const camera_lost: Scenario = {
     },
     {
       at: 45,
-      label: 'Camera A_in recovered',
+      label: 'Камера A_in восстановлена',
       action: () => {
         useDashboard.getState().ingest({
           topic: 'corridor/alerts',
@@ -188,8 +188,8 @@ const camera_lost: Scenario = {
  */
 const full_demo: Scenario = {
   name: 'full_demo',
-  label: 'Full Demo',
-  description: 'Complete showcase: symmetric → asymmetric peak → stuck truck → ambulance → recovery.',
+  label: 'Полная демонстрация',
+  description: 'Полный показ: симметрия → асимметрия → застрявшая фура → скорая → восстановление.',
   duration: 120,
   initialMode: 'adaptive',
   initialRates: { A: 1.0, B: 1.0 },
@@ -197,37 +197,37 @@ const full_demo: Scenario = {
     // 0–20 s: symmetric (initial rates already set)
     {
       at: 20,
-      label: 'Asymmetric peak begins',
+      label: 'Асимметричный пик',
       action: (o) => o.setSpawnRates(2.0, 0.3),
     },
     {
       at: 50,
-      label: 'Equalise flow',
+      label: 'Выравнивание потока',
       action: (o) => o.setSpawnRates(0.8, 0.8),
     },
     {
       at: 55,
-      label: 'Stuck truck (A)',
+      label: 'Застрявшая фура (A)',
       action: (o) => o.triggerStuck('A'),
     },
     {
       at: 70,
-      label: 'Ambulance (B)',
+      label: 'Скорая (B)',
       action: (o) => o.triggerAmbulance('B'),
     },
     {
       at: 80,
-      label: 'Emergency stop',
+      label: 'Аварийная остановка',
       action: (o) => o.emergencyStop(),
     },
     {
       at: 85,
-      label: 'Resume',
+      label: 'Возобновление',
       action: (o) => o.resume(),
     },
     {
       at: 90,
-      label: 'Recovery flow',
+      label: 'Восстановление потока',
       action: (o) => o.setSpawnRates(0.6, 0.6),
     },
   ],

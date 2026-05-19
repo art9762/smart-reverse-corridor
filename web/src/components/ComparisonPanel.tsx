@@ -20,7 +20,7 @@ export function ComparisonPanel() {
   return (
     <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-400">Performance Metrics</h3>
+        <h3 className="text-sm font-medium text-gray-400">Показатели эффективности</h3>
         <span
           className={`text-xs font-semibold px-2 py-0.5 rounded border ${
             mode === 'adaptive'
@@ -34,18 +34,18 @@ export function ComparisonPanel() {
 
       {/* Summary row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-        <MetricCard label="Throughput (5min)" value={`${totalThroughput} veh`} />
+        <MetricCard label="Пропускная (5мин)" value={`${totalThroughput} ТС`} />
         <MetricCard
-          label="Avg Delay"
-          value={Number.isFinite(avgDelay) ? `${avgDelay.toFixed(1)}s` : '—'}
+          label="Ср. задержка"
+          value={Number.isFinite(avgDelay) ? `${avgDelay.toFixed(1)}с` : '—'}
         />
-        <MetricCard label="Max Queue A" value={String(maxQueueA)} />
-        <MetricCard label="Max Queue B" value={String(maxQueueB)} />
+        <MetricCard label="Макс. очередь A" value={String(maxQueueA)} />
+        <MetricCard label="Макс. очередь B" value={String(maxQueueB)} />
       </div>
 
       {/* Side-by-side breakdown */}
       <div className="border-t border-gray-700 pt-3">
-        <div className="text-xs text-gray-500 uppercase tracking-widest mb-2">Side breakdown</div>
+        <div className="text-xs text-gray-500 uppercase tracking-widest mb-2">По сторонам</div>
         <div className="grid grid-cols-2 gap-3">
           {(['A', 'B'] as const).map((side) => {
             const throughput = side === 'A' ? throughputA : throughputB;
@@ -57,24 +57,24 @@ export function ComparisonPanel() {
                 key={side}
                 className="bg-gray-900/60 rounded-md p-3 border border-gray-700"
               >
-                <div className="text-xs font-semibold text-slate-300 mb-2">Side {side}</div>
+                <div className="text-xs font-semibold text-slate-300 mb-2">Сторона {side}</div>
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Throughput</span>
-                    <span className="font-mono text-white">{throughput} veh</span>
+                    <span className="text-gray-500">Пропускная</span>
+                    <span className="font-mono text-white">{throughput} ТС</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Avg delay</span>
+                    <span className="text-gray-500">Ср. задержка</span>
                     <span className="font-mono text-white">
-                      {Number.isFinite(delay) ? `${delay.toFixed(1)}s` : '—'}
+                      {Number.isFinite(delay) ? `${delay.toFixed(1)}с` : '—'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Queue now</span>
+                    <span className="text-gray-500">Очередь сейчас</span>
                     <span className="font-mono text-white">{queue}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Max queue today</span>
+                    <span className="text-gray-500">Макс. очередь сегодня</span>
                     <span className="font-mono text-white">{maxQ}</span>
                   </div>
                 </div>
