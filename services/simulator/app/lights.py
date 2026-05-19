@@ -26,12 +26,14 @@ log = logging.getLogger(__name__)
 class Lights:
     settings: SimulatorSettings
     mode: str = "baseline"  # "baseline" | "adaptive"
-    phase: Phase = Phase.GREEN_A
+    phase: Phase = Phase.RED_BOTH
     phase_started_at: float = 0.0
     # In adaptive mode the controller drives all transitions; we stay on a
-    # safe ALL_RED fallback if no state arrived recently.
+    # safe RED_BOTH fallback if no state arrived recently.
     last_state_at: float = 0.0
     fallback_after_s: float = 10.0
+    # Track whether we ever received a state message from the controller.
+    _received_first_state: bool = False
 
     # ------------------------------------------------------------------ tick
     def tick(self, now: float) -> Phase:
@@ -39,14 +41,16 @@ class Lights:
         if self.mode == "baseline":
             self._tick_baseline(now)
         else:
-            # In adaptive mode, fall back to ALL_RED if we lost the controller.
+            # In adaptive mode, fall back to RED_BOTH if we lost the controller.
+            # Use wall-clock for timeout since apply_state uses wall-clock.
+            wall_now = __import__('time').time()
             if (
-                self.last_state_at > 0
-                and now - self.last_state_at > self.fallback_after_s
-                and self.phase != Phase.ALL_RED
+                self._received_first_state
+                and wall_now - self.last_state_at > self.fallback_after_s
+                and self.phase not in (Phase.ALL_RED, Phase.RED_BOTH)
             ):
-                log.warning("adaptive: controller silent, falling back to ALL_RED")
-                self.phase = Phase.ALL_RED
+                log.warning("adaptive: controller silent, falling back to RED_BOTH")
+                self.phase = Phase.RED_BOTH
                 self.phase_started_at = now
         return self.phase
 
@@ -83,7 +87,7 @@ class Lights:
         self.phase_started_at = now
 
     # Default, overwritten by _tick_baseline once we leave the first green.
-    _last_green: Phase = Phase.GREEN_A
+    _last_green: Phase = Phase.GREEN_B  # so first transition goes to GREEN_A
 
     # ------------------------------------------------------------ adaptive
     def apply_state(self, payload: dict, now: float) -> None:
@@ -97,12 +101,13 @@ class Lights:
         try:
             new_phase = Phase(phase_str)
         except ValueError:
-            # Controller may send phases we don't have in our enum (shouldn't
-            # happen now, but be defensive). Map unknown to ALL_RED for safety.
-            log.warning("unknown phase '%s', treating as ALL_RED", phase_str)
-            new_phase = Phase.ALL_RED
+            # Controller may send phases we don't have in our enum.
+            # Map unknown to RED_BOTH for safety.
+            log.warning("unknown phase '%s', treating as RED_BOTH", phase_str)
+            new_phase = Phase.RED_BOTH
         if new_phase != self.phase:
             log.info("adaptive: phase %s -> %s", self.phase.value, new_phase.value)
         self.phase = new_phase
         self.phase_started_at = float(payload.get("phase_started_at", now))
-        self.last_state_at = now
+        self.last_state_at = now  # wall-clock (time.time() passed by caller)
+        self._received_first_state = True
