@@ -13,8 +13,9 @@ from __future__ import annotations
 import json
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Iterable
+from uuid import uuid4
 
 from .world import Side, Vehicle
 
@@ -43,9 +44,11 @@ class CameraEvent:
     dir: str
     confidence: float
     plate: str | None = None
+    event_id: str = field(default_factory=lambda: uuid4().hex)
 
     def to_payload(self) -> dict:
         return {
+            "event_id": self.event_id,
             "ts": self.ts,
             "track_id": self.track_id,
             "class": self.cls,

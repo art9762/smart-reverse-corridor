@@ -11,6 +11,7 @@ import json
 import threading
 import time
 from typing import Optional
+from uuid import uuid4
 
 import paho.mqtt.client as mqtt
 import structlog
@@ -91,8 +92,10 @@ class MqttPublisher:
         confidence: float,
         ts: Optional[float] = None,
         plate: Optional[str] = None,
+        event_id: str | None = None,
     ) -> None:
         payload = {
+            "event_id": event_id if event_id is not None else uuid4().hex,
             "ts": ts if ts is not None else time.time(),
             "track_id": int(track_id),
             "class": cls_name,
