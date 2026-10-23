@@ -21,6 +21,13 @@ phase finite-state machine (FSM).
 * Exposes a REST + WebSocket API for the dashboard and operators.
 * Stores events and config in SQLite. Optional InfluxDB sink for tick metrics —
   if Influx is unreachable, writes degrade to no-ops.
+* Validates camera-event identities before applying them and suppresses recent
+  QoS=1 redeliveries, including duplicate exits that would otherwise remove a
+  different simulated vehicle from the occupancy count. See the bounded-cache
+  and legacy-publisher limits in [the MQTT contract](../../docs/MQTT.md).
+
+This is a software/simulation prototype. The replay checks and unit tests do
+not establish suitability for operating real traffic signals.
 
 ## Endpoints
 

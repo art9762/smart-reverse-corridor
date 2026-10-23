@@ -18,6 +18,7 @@ from typing import Any, Deque, Dict, List, Optional, Set, Tuple
 
 import structlog
 
+from .camera_events import CameraEventGate
 from .config import Settings
 from .counters import Counters
 from .fsm import (
@@ -77,6 +78,7 @@ class Engine:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.counters = Counters(stuck_threshold_s=settings.stuck_threshold_s)
+        self._camera_events = CameraEventGate()
         self.scheduler = Scheduler(settings)
         self.fsm = CorridorFSM(
             timings=FSMTimings(
@@ -220,6 +222,12 @@ class Engine:
             self._apply_config(msg.payload)
 
     def _handle_cam_event(self, side: str, direction: str, payload: Dict[str, Any]) -> None:
+        try:
+            if not self._camera_events.accept(side, direction, payload):
+                return
+        except (TypeError, ValueError) as exc:
+            log.warning("engine.invalid_camera_event", side=side, direction=direction, error=str(exc))
+            return
         # `side` here is the CAMERA side (from MQTT topic), not the vehicle's
         # travel direction. For zone occupancy we need to track by vehicle
         # origin side:
@@ -580,6 +588,7 @@ class Engine:
         """
         # Reset counters
         self.counters.reset()
+        self._camera_events.clear()
 
         # Clear rolling metrics
         for side in ("A", "B"):

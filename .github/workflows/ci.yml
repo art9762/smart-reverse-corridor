@@ -25,9 +25,17 @@ jobs:
         run: |
           if [ -f pyproject.toml ] || [ -f requirements.txt ]; then
             python -m pip install --upgrade pip
-            [ -f requirements.txt ] && pip install -r requirements.txt || true
-            [ -f requirements-dev.txt ] && pip install -r requirements-dev.txt || true
-            pip install pytest ruff mypy || true
+            if [ -f requirements-test.txt ]; then
+              python -m pip install -r requirements-test.txt
+            elif [ -f requirements.txt ]; then
+              python -m pip install -r requirements.txt
+            else
+              python -m pip install .
+            fi
+            if [ -f requirements-dev.txt ]; then
+              python -m pip install -r requirements-dev.txt
+            fi
+            python -m pip install pytest ruff mypy
           else
             echo "no python project yet, skipping"
             exit 0

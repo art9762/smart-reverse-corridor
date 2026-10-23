@@ -1,6 +1,8 @@
 """Headless tests for the camera bus (matches `docs/MQTT.md` schema)."""
 from __future__ import annotations
 
+from uuid import UUID
+
 from app.cameras import ALL_CAMERAS, CameraBus, camera_id
 from app.world import Side, VehicleType, World, kmh_to_ms
 
@@ -31,12 +33,25 @@ def test_event_topic_and_schema() -> None:
     assert topic == "corridor/cam/A/in/event"
     assert qos == 1 and retain is False
     # MQTT contract fields:
-    expected_keys = {"ts", "track_id", "class", "side", "dir", "confidence", "plate"}
+    expected_keys = {"event_id", "ts", "track_id", "class", "side", "dir", "confidence", "plate"}
     assert set(payload.keys()) == expected_keys
     assert payload["side"] == "A"
     assert payload["dir"] == "in"
     assert payload["class"] == "car"
     assert payload["plate"] is None
+    assert UUID(payload["event_id"]).version == 4
+
+
+def test_event_ids_are_unique_when_a_simulation_restarts() -> None:
+    bus = _RecordBus()
+    for _ in range(2):
+        cam = CameraBus(publish=bus)
+        _, crossings = _world_with_car_at_a_in()
+        cam.emit_events(crossings, now=10.0)
+    first, second = [payload for _, payload, _, _ in bus.published]
+    assert first["track_id"] == second["track_id"]
+    assert first["ts"] == second["ts"]
+    assert first["event_id"] != second["event_id"]
 
 
 def test_heartbeat_schema_and_rate_limit() -> None:
