@@ -1,0 +1,5 @@
+# Unit tests stub the detector model and never need PyTorch, YOLO weights or video IO.
+numpy==1.26.4
+paho-mqtt==2.1.0
+structlog==24.4.0
+pytest==8.3.3
